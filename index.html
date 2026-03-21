@@ -2,169 +2,163 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>HIT Precision AR-Nav</title>
+    <title>HIT Intelligent AR Nav</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    
     <style>
-      body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; }
-      #nav-panel {
-        position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
-        width: 95%; background: rgba(255,255,255,0.95); border-radius: 12px; padding: 10px;
-        z-index: 3000; box-shadow: 0 8px 32px rgba(0,0,0,0.3); border: 1px solid #00ffcc;
-      }
-      .input-row { display: flex; align-items: center; padding: 5px 0; }
-      .dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 10px; }
-      select { border: none; width: 100%; font-size: 14px; background: transparent; font-weight: 600; }
+      body { margin: 0; overflow: hidden; font-family: sans-serif; }
       
-      #ai-btn {
-        position: fixed; bottom: 30px; right: 20px; width: 65px; height: 65px;
-        background: radial-gradient(circle, #00ffcc, #0088aa); border-radius: 50%;
-        z-index: 4000; display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 0 20px #00ffcc; cursor: pointer;
+      /* UI Panel - Higher Z-Index */
+      #ui-panel {
+        position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
+        background: rgba(0,0,0,0.9); color: #00ffcc; padding: 15px;
+        border-radius: 12px; z-index: 1000; text-align: center; width: 85%;
+        border: 2px solid #00ffcc;
       }
+
+      /* MAP BUTTON - Increased Z-Index to ensure it's clickable */
+      #map-btn {
+        position: fixed; top: 20px; right: 20px;
+        padding: 20px; background: #2ecc71; border: none; border-radius: 50%;
+        color: white; font-weight: bold; z-index: 2000; cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+      }
+
       #map-container {
-        display: none; position: fixed; top: 15%; left: 5%; width: 90%; height: 60%;
-        background: #000; border: 2px solid #00ffcc; border-radius: 15px; z-index: 2500;
+        display: none; position: fixed; top: 5%; left: 5%;
+        width: 90%; height: 85%; background: white; border: 3px solid #00ffcc;
+        z-index: 1500; border-radius: 15px; overflow: auto;
       }
-      #status-toast {
-        position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
-        background: rgba(0,255,204,0.2); color: #00ffcc; padding: 8px 20px;
-        border-radius: 20px; border: 1px solid #00ffcc; z-index: 2000; font-size: 12px;
+
+      #map-wrapper { position: relative; width: 1000px; }
+      #map-img { width: 100%; height: auto; display: block; }
+
+      #user-arrow {
+        position: absolute; top: 50%; left: 50%;
+        width: 0; height: 0; 
+        border-left: 12px solid transparent; border-right: 12px solid transparent;
+        border-bottom: 24px solid #e74c3c;
+        transform: translate(-50%, -50%);
+        transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
     </style>
   </head>
 
   <body>
-    <div id="nav-panel">
-      <div class="input-row"><div class="dot" style="background:#2ecc71"></div>
-        <select id="start-node">
-          <option value="entrance">Main Entrance</option>
-          </select>
-      </div>
-      <div class="input-row"><div class="dot" style="background:#e74c3c"></div>
-        <select id="end-node" onchange="initiateNav()"></select>
+    <button id="map-btn" onclick="toggleMap()">MAP</button>
+
+    <div id="map-container" id="mapLayer">
+      <div id="map-wrapper">
+        <img id="map-img" src="assets/blueprint.jpeg">
+        <div id="user-arrow"></div>
       </div>
     </div>
 
-    <div id="ai-btn" onclick="startVoiceAI()">
-        <img src="https://cdn-icons-png.flaticon.com/512/2103/2103633.png" width="30" style="filter:invert(1)">
+    <div id="ui-panel">
+      <div id="status">Tap & Say a Room (e.g. "S1")</div>
+      <div id="nav-target" style="font-size: 0.9em; color: #fff; margin-top: 5px;">System Active</div>
     </div>
 
-    <div id="status-toast">Detecting Movement...</div>
-
-    <div id="map-container">
-      <canvas id="topViewCanvas"></canvas>
-    </div>
-
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
       <a-assets>
-        <a-asset-item id="building-model" src="assets/building.glb"></a-asset-item>
+        <a-asset-item id="building" src="assets/building.glb"></a-asset-item>
+        <img id="floorplan" src="assets/blueprint.jpeg">
       </a-assets>
 
-      <a-entity id="building" gltf-model="#building-model" position="0 -1.5 -5" scale="1 1 1" wireframe-material></a-entity>
+      <a-entity light="type: ambient; intensity: 0.8;"></a-entity>
+      <a-entity light="type: directional; intensity: 1; position: 1 4 3"></a-entity>
 
-      <a-entity id="navigation-path" line="color: #00ffcc; opacity: 0.8"></a-entity>
+      <a-entity id="main-building" gltf-model="#building" position="0 -1.4 -5" scale="0.6 0.6 0.6" edge-logic></a-entity>
       
-      <a-sphere id="target-point" radius="0.3" color="#ff4d4d" visible="false"
-                animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true"></a-sphere>
-
+      <a-plane src="#floorplan" rotation="-90 0 0" width="20" height="20" position="0 -1.5 -5"></a-plane>
       <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-      // 1. COMPREHENSIVE ROOM DATABASE (All 20+ Rooms)
-      const rooms = {
-        "n1": {x: 35, y: 10, name: "Hydraulic Lab"}, "n2": {x: 28, y: 10, name: "Biotech Lab"},
-        "n3": {x: 21, y: 10, name: "CPSE Lab"}, "n4": {x: 14, y: 10, name: "CS 1"},
-        "n5": {x: 7, y: 10, name: "IME 1"}, "n6": {x: 0, y: 10, name: "Pharmacy Lab"},
-        "s1": {x: 35, y: 30, name: "Conference Room"}, "s2": {x: 28, y: 30, name: "CS Lab 2"},
-        "s3": {x: 21, y: 30, name: "SME Lab 1"}, "s4": {x: 14, y: 30, name: "SME Lab 2"},
-        "s8": {x: 0, y: 30, name: "IME 3"}, "library": {x: -10, y: 40, name: "Library Reserve"},
-        "chairman": {x: 30, y: 45, name: "Chairman Office"}, "toilets": {x: 15, y: 20, name: "Restrooms"}
-        // Add remaining rooms following this 7m/9m grid pattern
-      };
-
-      // Populate Select Menus
-      const startSelect = document.getElementById('start-node');
-      const endSelect = document.getElementById('end-node');
-      Object.keys(rooms).forEach(id => {
-        let opt = `<option value="${id}">${id.toUpperCase()}: ${rooms[id].name}</option>`;
-        startSelect.innerHTML += opt;
-        endSelect.innerHTML += opt;
-      });
-
-      // 2. REAL-TIME MOVEMENT & ROTATION
-      let userPos = { x: 0, y: 0, z: 0 };
-      let compassHeading = 0;
-
-      window.addEventListener('deviceorientation', (e) => {
-        compassHeading = e.webkitCompassHeading || (360 - e.alpha);
-        const b = document.getElementById('building');
-        b.setAttribute('rotation', `0 ${compassHeading} 0`);
-      });
-
-      // Pedometer Logic (Simulated movement for demo - can link to Acceleration API)
-      window.addEventListener('devicemotion', (e) => {
-        let acc = e.accelerationIncludingGravity;
-        if(Math.abs(acc.x) > 1.5) { // Simple step detection
-           userPos.z -= 0.1; // Move forward in AR space
-           updateUI();
+      // 1. MAP TOGGLE FUNCTION (Fixed Layering)
+      function toggleMap() {
+        const map = document.getElementById('map-container');
+        const btn = document.getElementById('map-btn');
+        if (map.style.display === 'block') {
+          map.style.display = 'none';
+          btn.innerText = 'MAP';
+          btn.style.background = '#2ecc71';
+        } else {
+          map.style.display = 'block';
+          btn.innerText = 'X';
+          btn.style.background = '#e74c3c';
         }
-      });
+      }
 
-      // 3. TRANSPARENT WIREFRAME LOGIC
-      AFRAME.registerComponent('wireframe-material', {
+      // 2. COMPASS SYNC
+      window.addEventListener('deviceorientation', (event) => {
+        let heading = event.webkitCompassHeading || (360 - event.alpha);
+        if (heading) {
+          document.getElementById('main-building').setAttribute('rotation', {x: 0, y: heading, z: 0});
+          document.getElementById('user-arrow').style.transform = `translate(-50%, -50%) rotate(${heading}deg)`;
+        }
+      }, true);
+
+      // 3. SOLID VIEW / EDGE LOGIC
+      AFRAME.registerComponent('edge-logic', {
         init: function () {
           this.el.addEventListener('model-loaded', () => {
-            const mesh = this.el.getObject3D('mesh');
-            mesh.traverse(node => {
+            const obj = this.el.getObject3D('mesh');
+            obj.traverse(node => {
               if (node.isMesh) {
-                node.material.wireframe = true;
-                node.material.color.set(0x00ffcc);
-                node.material.transparent = true;
-                node.material.opacity = 0.3;
+                node.material.color.set(0x222222); 
+                const edges = new THREE.EdgesGeometry(node.geometry);
+                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00ffcc }));
+                node.add(line);
               }
             });
           });
         }
       });
 
-      // 4. VOICE & PATHFINDING
-      const synth = window.speechSynthesis;
-      function speak(text) {
-        const u = new SpeechSynthesisUtterance(text);
-        u.voice = synth.getVoices().find(v => v.name.includes("Google UK English Male")) || u.voice;
-        u.rate = 0.85; synth.speak(u);
-      }
+      // 4. ROOM DATABASE
+      const locations = {
+        "n1": {t:"15%", l:"82%"}, "hydraulic": {t:"15%", l:"82%"},
+        "n2": {t:"15%", l:"68%"}, "biotech": {t:"15%", l:"68%"},
+        "n6": {t:"15%", l:"18%"}, "pharmacy": {t:"15%", l:"18%"},
+        "s1": {t:"65%", l:"82%"}, "conference": {t:"65%", l:"82%"},
+        "s8": {t:"65%", l:"20%"}, "ime 3": {t:"65%", l:"20%"},
+        "library": {t:"78%", l:"20%"},
+        "chairman": {t:"78%", l:"68%"},
+        "toilets": {t:"46%", l:"42%"}
+      };
 
-      function initiateNav() {
-        const start = startSelect.value;
-        const end = endSelect.value;
-        const dx = rooms[end].x - rooms[start].x;
-        const dy = rooms[end].y - rooms[start].y;
-        
-        const pathMsg = `Exit your current room. Turn ${dx > 0 ? 'Right' : 'Left'}. Walk ${Math.abs(dx)} meters. Then turn toward the ${rooms[end].name}.`;
-        speak(pathMsg);
-        
-        // Update AR Path
-        const target = document.getElementById('target-point');
-        target.setAttribute('position', `${dx} -1 ${-dy}`);
-        target.setAttribute('visible', 'true');
-      }
+      // 5. SIMPLIFIED VOICE LOGIC
+      window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
 
-      function startVoiceAI() {
-        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        rec.onresult = (e) => {
-            const cmd = e.results[0][0].transcript.toLowerCase();
-            Object.keys(rooms).forEach(r => { if(cmd.includes(r)) { endSelect.value = r; initiateNav(); }});
-        };
-        rec.start();
-        speak("Which room can I help you find?");
-      }
+      recognition.onresult = (event) => {
+        const command = event.results[event.results.length - 1][0].transcript.toLowerCase();
+        const statusText = document.getElementById('status');
+        const targetText = document.getElementById('nav-target');
+        const arrow = document.getElementById('user-arrow');
 
-      function updateUI() {
-        document.getElementById('status-toast').innerText = `POS: ${userPos.z.toFixed(1)}m | Heading: ${Math.round(compassHeading)}°`;
-      }
+        statusText.innerText = "Heard: " + command;
+
+        for (let key in locations) {
+          if (command.includes(key)) {
+            // Instant Sync & Move
+            targetText.innerText = "SYNCED TO: " + key.toUpperCase();
+            arrow.style.top = locations[key].t;
+            arrow.style.left = locations[key].l;
+            window.navigator.vibrate(100);
+            break;
+          }
+        }
+      };
+
+      // Start Recognition on First Tap
+      window.addEventListener('click', () => { 
+        recognition.start(); 
+        document.getElementById('status').innerText = "Listening...";
+      });
     </script>
   </body>
 </html>
