@@ -8,16 +8,19 @@
   </head>
 
   <body style="margin: 0; overflow: hidden;">
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-      
-      <a-assets>
-        <a-asset-item id="building-mesh" src="assets/your_mesh_name.glb"></a-asset-item>
-      </a-assets>
+   <a-scene 
+  embedded 
+  arjs='sourceType: webcam; debugUIEnabled: false; detectionMode: mono_and_matrix; matrixCodeType: 3x3;'
+  vr-mode-ui="enabled: false"
+  renderer="logarithmicDepthBuffer: true;">
+  
+  <a-assets>
+    <a-asset-item id="building" src="assets/building.glb"></a-asset-item>
+  </a-assets>
 
-      <a-entity gltf-model="#building-mesh" position="0 0 0" scale="1 1 1" nav-mesh></a-entity>
+  <a-entity gltf-model="#building" position="0 0 -2" scale="0.5 0.5 0.5"></a-entity>
 
-      <a-entity camera look-controls wasd-controls position="0 1.6 0"></a-entity>
-
-    </a-scene>
+  <a-marker-camera preset="hiro"></a-marker-camera>
+</a-scene>
   </body>
 </html>
