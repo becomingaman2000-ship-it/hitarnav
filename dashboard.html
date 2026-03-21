@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | HIT Navigator</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen">
+
+    <nav class="bg-white border-b p-4 flex justify-between items-center shadow-sm">
+        <h1 class="font-bold text-cyan-600">HIT NAV PRO</h1>
+        <div class="flex items-center gap-3">
+            <span id="display-role" class="text-xs font-bold px-3 py-1 bg-cyan-100 text-cyan-700 rounded-full uppercase"></span>
+            <button onclick="logout()" class="text-slate-400 hover:text-red-500 text-sm">Logout</button>
+        </div>
+    </nav>
+
+    <main class="p-6 max-w-lg mx-auto">
+        <h2 class="text-2xl font-bold text-slate-800 mb-6">Welcome, <span id="display-name" class="text-cyan-600">User</span></h2>
+
+        <div class="grid gap-4">
+            <button onclick="window.location.href='navigator.html'" class="w-full bg-white p-6 rounded-2xl shadow-sm border border-slate-200 flex items-center gap-4 hover:border-cyan-400 transition text-left">
+                <div class="w-12 h-12 bg-cyan-100 rounded-xl flex items-center justify-center text-2xl">📍</div>
+                <div>
+                    <h3 class="font-bold text-slate-800">AR Navigator</h3>
+                    <p class="text-sm text-slate-500">Launch camera to find rooms</p>
+                </div>
+            </button>
+
+            <div id="admin-section" class="hidden space-y-4 pt-4 border-t">
+                <p class="text-xs font-bold text-slate-400 uppercase tracking-widest">Management Tools</p>
+                <button class="w-full bg-slate-800 text-white p-6 rounded-2xl flex items-center gap-4 hover:bg-slate-700 transition text-left">
+                    <div class="w-12 h-12 bg-slate-700 rounded-xl flex items-center justify-center text-2xl">⚙️</div>
+                    <div>
+                        <h3 class="font-bold">System Admin</h3>
+                        <p class="text-sm opacity-70">Manage Students & Locations</p>
+                    </div>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Check Role on Load
+        const role = localStorage.getItem('hit_user_role');
+        const email = localStorage.getItem('hit_user_email');
+
+        if (!role) {
+            window.location.href = 'index.html'; // Kick back to login if no data
+        }
+
+        document.getElementById('display-role').innerText = role;
+        document.getElementById('display-name').innerText = email.split('@')[0];
+
+        // Show Admin Tools if Chairman
+        if (role === 'admin') {
+            document.getElementById('admin-section').classList.remove('hidden');
+        }
+
+        function logout() {
+            localStorage.clear();
+            window.location.href = 'index.html';
+        }
+    </script>
+</body>
+</html>
