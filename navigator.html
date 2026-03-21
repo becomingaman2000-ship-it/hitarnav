@@ -2,66 +2,135 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>Navigator | HIT AR</title>
+    <title>HIT Navigator | AR Voice AI</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        #exit-btn { position: fixed; top: 20px; left: 20px; z-index: 5000; background: #ff3b30; color: white; border: none; padding: 14px 24px; border-radius: 15px; font-weight: 900; box-shadow: 0 4px 20px rgba(0,0,0,0.4); text-transform: uppercase; font-size: 10px; }
-        #nav-ui { position: fixed; top: 90px; left: 50%; transform: translateX(-50%); width: 85%; background: white; z-index: 5000; padding: 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #00ffcc; text-align: center; }
-        select { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #eee; background: #f9f9f9; font-size: 14px; font-weight: 800; }
+        .glowing-btn {
+            box-shadow: 0 0 20px #06b6d4, 0 0 40px #06b6d4;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse {
+            0% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.1); opacity: 0.8; }
+            100% { transform: scale(1); opacity: 1; }
+        }
     </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
 
-    <button id="exit-btn" onclick="location.href='dashboard.html'">✕ Close AR</button>
+    <div class="fixed inset-0 z-50 pointer-events-none flex flex-col justify-between p-6">
+        <div class="flex justify-between items-start pointer-events-auto">
+            <button onclick="location.href='dashboard.html'" class="bg-red-600 text-white p-3 rounded-2xl font-black text-[10px] uppercase shadow-xl">✕ Exit</button>
+            <div class="bg-black/60 backdrop-blur-md p-4 rounded-3xl border border-white/20 text-white max-w-[200px]">
+                <p id="ai-status" class="text-[9px] font-black uppercase tracking-widest text-cyan-400">System Ready</p>
+                <p id="ai-text" class="text-xs font-medium mt-1 italic">"Waiting for your command..."</p>
+            </div>
+        </div>
 
-    <div id="nav-ui">
-        <p style="margin: 0 0 10px 0; font-size: 8px; font-weight: 900; color: #999; text-transform: uppercase; letter-spacing: 2px;">HIT Venue Target</p>
-        <select id="dest">
-            <option value="">Choose Destination...</option>
-            <option value="S1 Lab">S1 Computer Lab</option>
-            <option value="N1 Hydraulic">N1 Hydraulic Lab</option>
-            <option value="Library">HIT Library</option>
-            <option value="Cafeteria">Main Cafeteria</option>
-            <option value="Admin Block">Admin Block</option>
-        </select>
+        <div class="flex flex-col items-center pointer-events-auto mb-10">
+            <button id="voice-trigger" class="glowing-btn w-20 h-20 bg-cyan-500 rounded-full flex items-center justify-center text-3xl shadow-2xl transition active:scale-90">
+                🎙️
+            </button>
+            <p class="text-white text-[10px] font-black uppercase mt-4 tracking-widest drop-shadow-md">Tap to Speak to HIT AI</p>
+        </div>
     </div>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-        <a-sphere id="marker" radius="0.3" color="#00ffcc" visible="false" position="0 -1 -5" 
-                  animation="property: position; to: 0 -0.5 -5; dir: alternate; dur: 1000; loop: true"></a-sphere>
+        <a-sphere id="nav-marker" radius="0.4" color="#06b6d4" visible="false" position="0 0 -5"
+                  animation="property: position; to: 0 0.5 -5; dir: alternate; dur: 1000; loop: true"></a-sphere>
+        
+        <a-text id="marker-label" value="" align="center" position="0 1.2 -5" scale="2 2 2" color="#00ffcc" visible="false"></a-text>
+        
         <a-entity camera></a-entity>
     </a-scene>
 
     <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        // --- ROOM DATABASE FROM BLUEPRINT ---
+        const campusRooms = [
+            "S1 Conference", "S2 Computer Science Lab", "S3 SME Lab 1", "S4 SME Lab 2", 
+            "S5 FPT 4", "S6 FE 4", "S7 CS 4", "S8 IME 3", "Library Reserve", "Admin Block",
+            "N1 Hydraulic Lab", "N2 Bio Tech Lab", "N3 CPSE Lab", "N4 CS 1", "N5 IME 1", 
+            "N6 Proposed Pharmacy", "N7 FPT Lab", "N8 FPT Lab 2", "N9 FE 1", "N10 Analytic Lab",
+            "N11 Pharmaceutical Lab", "N12 Pneumatic Lab"
+        ];
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCcendyEqvaAw7ldnFOSwDEfQb74L_wfmw",
-            authDomain: "hit-navigator-56b2b.firebaseapp.com",
-            projectId: "hit-navigator-56b2b",
-            storageBucket: "hit-navigator-56b2b.firebasestorage.app",
-            messagingSenderId: "744294498866",
-            appId: "1:744294498866:web:94aea9f4db7a998256722b"
+        const aiText = document.getElementById('ai-text');
+        const aiStatus = document.getElementById('ai-status');
+        const voiceBtn = document.getElementById('voice-trigger');
+
+        // VOICE RECOGNITION SETUP
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+        recognition.lang = 'en-US';
+        recognition.interimResults = false;
+
+        // TEXT-TO-SPEECH FUNCTION
+        const speak = (msg) => {
+            const synth = window.speechSynthesis;
+            const utter = new SpeechSynthesisUtterance(msg);
+            utter.pitch = 1.1;
+            utter.rate = 1;
+            synth.speak(utter);
+            aiText.innerText = `"${msg}"`;
         };
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+        // NAVIGATION LOGIC
+        let step = 0; // 0 = Idle, 1 = Asked Location, 2 = Asked Destination
+        let userLoc = "";
+        let userDest = "";
 
-        document.getElementById('dest').onchange = async (e) => {
-            const dest = e.target.value;
-            const email = localStorage.getItem('hit_user_email') || "Guest";
-            if(!dest) return;
-            document.getElementById('marker').setAttribute('visible', 'true');
-
-            await addDoc(collection(db, "NavigationLogs"), {
-                email: email,
-                destination: dest,
-                timestamp: serverTimestamp(),
-                role: localStorage.getItem('hit_user_role') || 'guest'
-            });
+        voiceBtn.onclick = () => {
+            aiStatus.innerText = "Listening...";
+            recognition.start();
         };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            aiStatus.innerText = "Processing...";
+
+            if (step === 0) {
+                if (transcript.includes("hello") || transcript.includes("hi") || transcript.includes("navigate")) {
+                    speak("Hello Chairman. Where are you currently located on campus?");
+                    step = 1;
+                } else {
+                    speak("I'm ready. Just say Hello to start navigation.");
+                }
+            } 
+            else if (step === 1) {
+                userLoc = transcript;
+                speak(`Got it. You are at ${userLoc}. Where do you want to go?`);
+                step = 2;
+            } 
+            else if (step === 2) {
+                // Check if the user mentioned a room from our blueprint list
+                const foundRoom = campusRooms.find(room => transcript.includes(room.toLowerCase()) || transcript.includes(room.split(' ')[0].toLowerCase()));
+                
+                if (foundRoom) {
+                    userDest = foundRoom;
+                    speak(`Navigating to ${userDest}. Follow the cyan marker on your screen.`);
+                    showMarker(userDest);
+                    step = 0; // Reset for next time
+                } else {
+                    speak("I didn't recognize that room. Please say one of the block names like S 1 or N 10.");
+                }
+            }
+        };
+
+        const showMarker = (roomName) => {
+            const marker = document.getElementById('nav-marker');
+            const label = document.getElementById('marker-label');
+            
+            marker.setAttribute('visible', 'true');
+            label.setAttribute('visible', 'true');
+            label.setAttribute('value', roomName);
+            
+            // Logic: In a real GPS app, we'd change position. 
+            // For the demo, we place it 5 meters in front of the camera.
+            aiStatus.innerText = "Navigation Active";
+        };
+
     </script>
 </body>
 </html>
