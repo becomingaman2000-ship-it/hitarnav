@@ -2,45 +2,37 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>HIT Intelligent AR Nav</title>
+    <title>HIT Corridor Navigation</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
       body { margin: 0; overflow: hidden; font-family: sans-serif; }
-      
-      /* UI Panel - Higher Z-Index */
       #ui-panel {
         position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
         background: rgba(0,0,0,0.9); color: #00ffcc; padding: 15px;
         border-radius: 12px; z-index: 1000; text-align: center; width: 85%;
         border: 2px solid #00ffcc;
       }
-
-      /* MAP BUTTON - Increased Z-Index to ensure it's clickable */
       #map-btn {
         position: fixed; top: 20px; right: 20px;
-        padding: 20px; background: #2ecc71; border: none; border-radius: 50%;
-        color: white; font-weight: bold; z-index: 2000; cursor: pointer;
-        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
+        padding: 15px; background: #2ecc71; border: none; border-radius: 50%;
+        color: white; font-weight: bold; z-index: 2000;
       }
-
       #map-container {
         display: none; position: fixed; top: 5%; left: 5%;
         width: 90%; height: 85%; background: white; border: 3px solid #00ffcc;
         z-index: 1500; border-radius: 15px; overflow: auto;
       }
-
       #map-wrapper { position: relative; width: 1000px; }
       #map-img { width: 100%; height: auto; display: block; }
-
       #user-arrow {
         position: absolute; top: 50%; left: 50%;
         width: 0; height: 0; 
-        border-left: 12px solid transparent; border-right: 12px solid transparent;
+        border-left: 10px solid transparent; border-right: 10px solid transparent;
         border-bottom: 24px solid #e74c3c;
         transform: translate(-50%, -50%);
-        transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        transition: all 0.8s ease-in-out;
       }
     </style>
   </head>
@@ -48,7 +40,7 @@
   <body>
     <button id="map-btn" onclick="toggleMap()">MAP</button>
 
-    <div id="map-container" id="mapLayer">
+    <div id="map-container">
       <div id="map-wrapper">
         <img id="map-img" src="assets/blueprint.jpeg">
         <div id="user-arrow"></div>
@@ -56,58 +48,87 @@
     </div>
 
     <div id="ui-panel">
-      <div id="status">Tap & Say a Room (e.g. "S1")</div>
-      <div id="nav-target" style="font-size: 0.9em; color: #fff; margin-top: 5px;">System Active</div>
+      <div id="status">Say a Room (e.g. "S2")</div>
+      <div id="nav-target" style="font-size: 0.8em; color: #fff; margin-top: 5px;">Calibrating...</div>
     </div>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
+    <a-scene arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;" vr-mode-ui="enabled: false">
       <a-assets>
-        <a-asset-item id="building" src="assets/building.glb"></a-asset-item>
-        <img id="floorplan" src="assets/blueprint.jpeg">
+        <a-asset-item id="building-model" src="assets/building.glb"></a-asset-item>
+        <img id="floorplan-img" src="assets/blueprint.jpeg">
       </a-assets>
 
       <a-entity light="type: ambient; intensity: 0.8;"></a-entity>
-      <a-entity light="type: directional; intensity: 1; position: 1 4 3"></a-entity>
 
-      <a-entity id="main-building" gltf-model="#building" position="0 -1.4 -5" scale="0.6 0.6 0.6" edge-logic></a-entity>
-      
-      <a-plane src="#floorplan" rotation="-90 0 0" width="20" height="20" position="0 -1.5 -5"></a-plane>
+      <a-entity id="world-anchor" position="0 -1.5 -10" scale="2.5 2.5 2.5">
+          <a-entity id="main-building" gltf-model="#building-model" edge-logic></a-entity>
+          <a-plane src="#floorplan-img" rotation="-90 0 0" width="30" height="30" position="0 -0.1 0"></a-plane>
+      </a-entity>
+
       <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-      // 1. MAP TOGGLE FUNCTION (Fixed Layering)
       function toggleMap() {
-        const map = document.getElementById('map-container');
-        const btn = document.getElementById('map-btn');
-        if (map.style.display === 'block') {
-          map.style.display = 'none';
-          btn.innerText = 'MAP';
-          btn.style.background = '#2ecc71';
-        } else {
-          map.style.display = 'block';
-          btn.innerText = 'X';
-          btn.style.background = '#e74c3c';
-        }
+        const m = document.getElementById('map-container');
+        m.style.display = (m.style.display === 'block') ? 'none' : 'block';
       }
 
-      // 2. COMPASS SYNC
+      // 1. FIX POSITION & SCALE: Building stays put while you move
       window.addEventListener('deviceorientation', (event) => {
         let heading = event.webkitCompassHeading || (360 - event.alpha);
         if (heading) {
+          // Rotates the building to match North
           document.getElementById('main-building').setAttribute('rotation', {x: 0, y: heading, z: 0});
+          // Rotates the map arrow
           document.getElementById('user-arrow').style.transform = `translate(-50%, -50%) rotate(${heading}deg)`;
         }
-      }, true);
+      });
 
-      // 3. SOLID VIEW / EDGE LOGIC
+      // 2. CORRIDOR COORDINATES (Moved to Doorways)
+      const locations = {
+        "s1": {t:"60%", l:"82%"}, // Entrance to S1
+        "s2": {t:"60%", l:"68%"}, // Entrance to S2
+        "s-block": {t:"55%", l:"50%"}, // Main S-Block corridor
+        "n-block": {t:"35%", l:"50%"}, // Main N-Block corridor
+        "n1": {t:"22%", l:"82%"}, // Entrance to N1
+        "library": {t:"70%", l:"20%"}, // Library door
+        "toilets": {t:"48%", l:"42%"}  // Corridor outside toilets
+      };
+
+      // 3. VOICE ENGINE
+      window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.continuous = true;
+
+      recognition.onresult = (event) => {
+        const command = event.results[event.results.length - 1][0].transcript.toLowerCase();
+        const arrow = document.getElementById('user-arrow');
+        const targetText = document.getElementById('nav-target');
+
+        for (let key in locations) {
+          if (command.includes(key)) {
+            // Update 2D Map Position
+            arrow.style.top = locations[key].t;
+            arrow.style.left = locations[key].l;
+            targetText.innerText = "AT DOORWAY: " + key.toUpperCase();
+            
+            // Move the AR World Anchor toward the user's feet
+            // This makes it feel like you are walking 'into' the building
+            document.getElementById('world-anchor').setAttribute('position', '0 -1.5 -2');
+            break;
+          }
+        }
+      };
+
+      // 4. EDGE LOGIC
       AFRAME.registerComponent('edge-logic', {
         init: function () {
           this.el.addEventListener('model-loaded', () => {
             const obj = this.el.getObject3D('mesh');
             obj.traverse(node => {
               if (node.isMesh) {
-                node.material.color.set(0x222222); 
+                node.material.color.set(0x333333); 
                 const edges = new THREE.EdgesGeometry(node.geometry);
                 const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00ffcc }));
                 node.add(line);
@@ -117,48 +138,7 @@
         }
       });
 
-      // 4. ROOM DATABASE
-      const locations = {
-        "n1": {t:"15%", l:"82%"}, "hydraulic": {t:"15%", l:"82%"},
-        "n2": {t:"15%", l:"68%"}, "biotech": {t:"15%", l:"68%"},
-        "n6": {t:"15%", l:"18%"}, "pharmacy": {t:"15%", l:"18%"},
-        "s1": {t:"65%", l:"82%"}, "conference": {t:"65%", l:"82%"},
-        "s8": {t:"65%", l:"20%"}, "ime 3": {t:"65%", l:"20%"},
-        "library": {t:"78%", l:"20%"},
-        "chairman": {t:"78%", l:"68%"},
-        "toilets": {t:"46%", l:"42%"}
-      };
-
-      // 5. SIMPLIFIED VOICE LOGIC
-      window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-      recognition.continuous = true;
-
-      recognition.onresult = (event) => {
-        const command = event.results[event.results.length - 1][0].transcript.toLowerCase();
-        const statusText = document.getElementById('status');
-        const targetText = document.getElementById('nav-target');
-        const arrow = document.getElementById('user-arrow');
-
-        statusText.innerText = "Heard: " + command;
-
-        for (let key in locations) {
-          if (command.includes(key)) {
-            // Instant Sync & Move
-            targetText.innerText = "SYNCED TO: " + key.toUpperCase();
-            arrow.style.top = locations[key].t;
-            arrow.style.left = locations[key].l;
-            window.navigator.vibrate(100);
-            break;
-          }
-        }
-      };
-
-      // Start Recognition on First Tap
-      window.addEventListener('click', () => { 
-        recognition.start(); 
-        document.getElementById('status').innerText = "Listening...";
-      });
+      window.onclick = () => { recognition.start(); };
     </script>
   </body>
 </html>
