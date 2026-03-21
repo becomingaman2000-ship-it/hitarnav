@@ -7,40 +7,48 @@
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
-      body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
+      body { margin: 0; overflow: hidden; font-family: sans-serif; }
+      
+      /* UI Panel - Higher Z-Index */
       #ui-panel {
         position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
         background: rgba(0,0,0,0.9); color: #00ffcc; padding: 15px;
-        border-radius: 12px; z-index: 100; text-align: center; width: 85%;
+        border-radius: 12px; z-index: 1000; text-align: center; width: 85%;
         border: 2px solid #00ffcc;
       }
+
+      /* MAP BUTTON - Increased Z-Index to ensure it's clickable */
       #map-btn {
         position: fixed; top: 20px; right: 20px;
-        padding: 15px; background: #2ecc71; border: none; border-radius: 50%;
-        color: white; font-weight: bold; z-index: 200;
+        padding: 20px; background: #2ecc71; border: none; border-radius: 50%;
+        color: white; font-weight: bold; z-index: 2000; cursor: pointer;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.5);
       }
+
       #map-container {
         display: none; position: fixed; top: 5%; left: 5%;
         width: 90%; height: 85%; background: white; border: 3px solid #00ffcc;
-        z-index: 150; border-radius: 15px; overflow: auto;
+        z-index: 1500; border-radius: 15px; overflow: auto;
       }
+
       #map-wrapper { position: relative; width: 1000px; }
-      #map-img { width: 100%; height: auto; }
+      #map-img { width: 100%; height: auto; display: block; }
+
       #user-arrow {
         position: absolute; top: 50%; left: 50%;
         width: 0; height: 0; 
-        border-left: 10px solid transparent; border-right: 10px solid transparent;
-        border-bottom: 20px solid #e74c3c;
-        transform: translate(-50%, -50%) rotate(0deg);
-        transition: all 0.5s ease-in-out;
+        border-left: 12px solid transparent; border-right: 12px solid transparent;
+        border-bottom: 24px solid #e74c3c;
+        transform: translate(-50%, -50%);
+        transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
       }
     </style>
   </head>
 
   <body>
-    <button id="map-btn">MAP</button>
+    <button id="map-btn" onclick="toggleMap()">MAP</button>
 
-    <div id="map-container">
+    <div id="map-container" id="mapLayer">
       <div id="map-wrapper">
         <img id="map-img" src="assets/blueprint.jpeg">
         <div id="user-arrow"></div>
@@ -48,11 +56,11 @@
     </div>
 
     <div id="ui-panel">
-      <div id="status">Tap & Say: "I am at [Room]"</div>
-      <div id="nav-target" style="font-size: 0.9em; color: #fff; margin-top: 5px;">Awaiting Localization...</div>
+      <div id="status">Tap & Say a Room (e.g. "S1")</div>
+      <div id="nav-target" style="font-size: 0.9em; color: #fff; margin-top: 5px;">System Active</div>
     </div>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
       <a-assets>
         <a-asset-item id="building" src="assets/building.glb"></a-asset-item>
         <img id="floorplan" src="assets/blueprint.jpeg">
@@ -61,29 +69,38 @@
       <a-entity light="type: ambient; intensity: 0.8;"></a-entity>
       <a-entity light="type: directional; intensity: 1; position: 1 4 3"></a-entity>
 
-      <a-entity id="main-building" gltf-model="#building" position="0 -1.4 -5" scale="0.5 0.5 0.5" edge-logic></a-entity>
+      <a-entity id="main-building" gltf-model="#building" position="0 -1.4 -5" scale="0.6 0.6 0.6" edge-logic></a-entity>
       
-      <a-plane src="#floorplan" rotation="-90 0 0" width="15" height="15" position="0 -1.5 -5"></a-plane>
-      <a-entity id="camera" camera></a-entity>
+      <a-plane src="#floorplan" rotation="-90 0 0" width="20" height="20" position="0 -1.5 -5"></a-plane>
+      <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-      // 1. COMPASS & DIRECTION LOGIC
-      let currentCompassHeading = 0;
-      window.addEventListener('deviceorientation', (event) => {
-        // Gets the compass heading from the phone hardware
-        currentCompassHeading = event.webkitCompassHeading || (360 - event.alpha);
-        
-        // Sync the 2D map arrow rotation with the real world
-        const arrow = document.getElementById('user-arrow');
-        arrow.style.transform = `translate(-50%, -50%) rotate(${currentCompassHeading}deg)`;
-        
-        // Sync the 3D Building walls with the real world direction
-        const building = document.getElementById('main-building');
-        building.setAttribute('rotation', {x: 0, y: currentCompassHeading, z: 0});
-      });
+      // 1. MAP TOGGLE FUNCTION (Fixed Layering)
+      function toggleMap() {
+        const map = document.getElementById('map-container');
+        const btn = document.getElementById('map-btn');
+        if (map.style.display === 'block') {
+          map.style.display = 'none';
+          btn.innerText = 'MAP';
+          btn.style.background = '#2ecc71';
+        } else {
+          map.style.display = 'block';
+          btn.innerText = 'X';
+          btn.style.background = '#e74c3c';
+        }
+      }
 
-      // 2. EDGE RENDERING (Solid View)
+      // 2. COMPASS SYNC
+      window.addEventListener('deviceorientation', (event) => {
+        let heading = event.webkitCompassHeading || (360 - event.alpha);
+        if (heading) {
+          document.getElementById('main-building').setAttribute('rotation', {x: 0, y: heading, z: 0});
+          document.getElementById('user-arrow').style.transform = `translate(-50%, -50%) rotate(${heading}deg)`;
+        }
+      }, true);
+
+      // 3. SOLID VIEW / EDGE LOGIC
       AFRAME.registerComponent('edge-logic', {
         init: function () {
           this.el.addEventListener('model-loaded', () => {
@@ -100,52 +117,48 @@
         }
       });
 
-      // 3. VOICE LOCALIZATION ENGINE
+      // 4. ROOM DATABASE
       const locations = {
-        "n1": { t: "15%", l: "82%" }, "hydraulic lab": { t: "15%", l: "82%" },
-        "s1": { t: "65%", l: "82%" }, "conference room": { t: "65%", l: "82%" },
-        "library reserve": { t: "78%", l: "20%" },
-        "toilets": { t: "46%", l: "42%" },
-        "chairman": { t: "78%", l: "68%" }
-        // ... (All other rooms from previous list should be kept here)
+        "n1": {t:"15%", l:"82%"}, "hydraulic": {t:"15%", l:"82%"},
+        "n2": {t:"15%", l:"68%"}, "biotech": {t:"15%", l:"68%"},
+        "n6": {t:"15%", l:"18%"}, "pharmacy": {t:"15%", l:"18%"},
+        "s1": {t:"65%", l:"82%"}, "conference": {t:"65%", l:"82%"},
+        "s8": {t:"65%", l:"20%"}, "ime 3": {t:"65%", l:"20%"},
+        "library": {t:"78%", l:"20%"},
+        "chairman": {t:"78%", l:"68%"},
+        "toilets": {t:"46%", l:"42%"}
       };
 
+      // 5. SIMPLIFIED VOICE LOGIC
       window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
-      recognition.lang = 'en-US';
 
       recognition.onresult = (event) => {
         const command = event.results[event.results.length - 1][0].transcript.toLowerCase();
         const statusText = document.getElementById('status');
         const targetText = document.getElementById('nav-target');
+        const arrow = document.getElementById('user-arrow');
 
-        // Check if user is LOCALIZING or NAVIGATING
-        if (command.includes("i am at") || command.includes("i'm at")) {
-          for (let key in locations) {
-            if (command.includes(key)) {
-              statusText.innerText = "Localized to: " + key.toUpperCase();
-              targetText.innerText = "Starting point set. Where to next?";
-              // Move arrow to current spot
-              document.getElementById('user-arrow').style.top = locations[key].t;
-              document.getElementById('user-arrow').style.left = locations[key].l;
-              break;
-            }
-          }
-        } else if (command.includes("take me to")) {
-          // Normal navigation logic to move the arrow to destination
-          for (let key in locations) {
-            if (command.includes(key)) {
-              targetText.innerText = "NAVIGATING TO: " + key.toUpperCase();
-              document.getElementById('user-arrow').style.top = locations[key].t;
-              document.getElementById('user-arrow').style.left = locations[key].l;
-              break;
-            }
+        statusText.innerText = "Heard: " + command;
+
+        for (let key in locations) {
+          if (command.includes(key)) {
+            // Instant Sync & Move
+            targetText.innerText = "SYNCED TO: " + key.toUpperCase();
+            arrow.style.top = locations[key].t;
+            arrow.style.left = locations[key].l;
+            window.navigator.vibrate(100);
+            break;
           }
         }
       };
 
-      window.onclick = () => { recognition.start(); };
+      // Start Recognition on First Tap
+      window.addEventListener('click', () => { 
+        recognition.start(); 
+        document.getElementById('status').innerText = "Listening...";
+      });
     </script>
   </body>
 </html>
