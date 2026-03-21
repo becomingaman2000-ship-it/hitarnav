@@ -1,189 +1,183 @@
 <!DOCTYPE html>
 <html>
-  <head>
+<head>
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
     <title>HIT AI AR-Navigator</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
     <style>
-      body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background: #000; }
-      
-      <div id="ui-overlay" style="position: fixed; top: 20px; left: 20px; z-index: 9999; display: flex; gap: 10px;">
-    <button onclick="window.location.href='dashboard.html'" 
-            style="background: rgba(255, 59, 48, 0.9); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: bold; cursor: pointer; backdrop-filter: blur(5px); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
-        ✕ EXIT NAV
-    </button>
-</div>
+        body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; background: #000; }
+        
+        /* Navigation Panel */
+        #nav-panel {
+            position: fixed; top: 80px; left: 50%; transform: translateX(-50%);
+            width: 90%; background: white; border-radius: 16px; padding: 15px;
+            z-index: 3000; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
+        }
+        .input-group { display: flex; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
+        .dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; }
+        .green { background: #2ecc71; } .red { background: #e74c3c; }
+        select { border: none; width: 100%; font-size: 16px; outline: none; color: #333; background: transparent; }
 
-<style>
-    /* Ensure the button looks good on mobile */
-    #ui-overlay button:active {
-        transform: scale(0.95);
-        background: #ff3b30;
-    }
-</style>
-      /* InDrive Style Navigation Panel */
-      #nav-panel {
-        position: fixed; top: 20px; left: 50%; transform: translateX(-50%);
-        width: 90%; background: white; border-radius: 16px; padding: 15px;
-        z-index: 3000; box-shadow: 0 10px 25px rgba(0,0,0,0.3);
-      }
-      .input-group { display: flex; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 8px; }
-      .dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 10px; }
-      .green { background: #2ecc71; } .red { background: #e74c3c; }
-      
-      select, input { border: none; width: 100%; font-size: 16px; outline: none; color: #333; background: transparent; }
+        /* Exit Button Styling */
+        #ui-overlay button:active {
+            transform: scale(0.95);
+            background: #ff3b30;
+        }
 
-      /* Smart AI Voice Icon */
-      #ai-assistant {
-        position: fixed; bottom: 40px; right: 30px;
-        width: 70px; height: 70px; background: linear-gradient(135.2deg, #00ffcc 0.6%, #00b4d8 98%);
-        border-radius: 50%; z-index: 4000; display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 0 20px rgba(0, 255, 204, 0.5); cursor: pointer; animation: pulse 2s infinite;
-      }
-      #ai-assistant img { width: 35px; filter: brightness(0) invert(1); }
+        /* AI Assistant Button */
+        #ai-assistant {
+            position: fixed; bottom: 40px; right: 30px;
+            width: 70px; height: 70px; background: linear-gradient(135.2deg, #00ffcc 0.6%, #00b4d8 98%);
+            border-radius: 50%; z-index: 4000; display: flex; align-items: center; justify-content: center;
+            box-shadow: 0 0 20px rgba(0, 255, 204, 0.5); cursor: pointer; animation: pulse 2s infinite;
+        }
+        #ai-assistant img { width: 35px; filter: brightness(0) invert(1); }
 
-      @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
 
-      /* Map Toggle */
-      #map-btn {
-        position: fixed; bottom: 40px; left: 30px;
-        width: 60px; height: 60px; background: #333; color: white; border: none;
-        border-radius: 50%; z-index: 3000; font-weight: bold;
-      }
-
-      #map-container {
-        display: none; position: fixed; top: 20%; left: 10%; width: 80%; height: 50%;
-        background: #0a192f; border: 2px solid #00ffcc; border-radius: 20px; z-index: 2500;
-      }
-
-      /* AR Instruction Overlays */
-      #ar-instruction {
-        position: fixed; bottom: 140px; left: 50%; transform: translateX(-50%);
-        background: rgba(0,0,0,0.7); color: #00ffcc; padding: 10px 20px;
-        border-radius: 30px; z-index: 2000; font-weight: bold; display: none;
-      }
+        #map-btn {
+            position: fixed; bottom: 40px; left: 30px;
+            width: 60px; height: 60px; background: #333; color: white; border: none;
+            border-radius: 50%; z-index: 3000; font-weight: bold;
+        }
+        #map-container {
+            display: none; position: fixed; top: 25%; left: 10%; width: 80%; height: 40%;
+            background: #0a192f; border: 2px solid #00ffcc; border-radius: 20px; z-index: 2500;
+        }
+        #ar-instruction {
+            position: fixed; bottom: 140px; left: 50%; transform: translateX(-50%);
+            background: rgba(0,0,0,0.7); color: #00ffcc; padding: 10px 20px;
+            border-radius: 30px; z-index: 2000; font-weight: bold; display: none;
+        }
     </style>
-  </head>
+</head>
 
-  <body>
+<body>
+    <div id="ui-overlay" style="position: fixed; top: 20px; left: 20px; z-index: 9999; display: flex; gap: 10px;">
+        <button onclick="window.location.href='dashboard.html'" 
+                style="background: rgba(255, 59, 48, 0.9); color: white; border: none; padding: 12px 20px; border-radius: 12px; font-weight: bold; cursor: pointer; backdrop-filter: blur(5px); box-shadow: 0 4px 15px rgba(0,0,0,0.3);">
+            ✕ EXIT NAV
+        </button>
+    </div>
+
     <div id="nav-panel">
-      <div class="input-group">
-        <div class="dot green"></div>
-        <select id="start-node">
-          <option value="" disabled selected>From: Current Location</option>
-          <option value="s1">S1 Conference Room</option>
-          <option value="s2">S2 Computer Lab</option>
-          <option value="n1">N1 Hydraulic Lab</option>
-          <option value="library">Library Reserve</option>
-          <option value="toilets">Central Toilets</option>
-        </select>
-      </div>
-      <div class="input-group" style="border: none;">
-        <div class="dot red"></div>
-        <select id="end-node" onchange="manualNavigate()">
-          <option value="" disabled selected>To: Where are you going?</option>
-          <option value="s1">S1 Conference Room</option>
-          <option value="s2">S2 Computer Lab</option>
-          <option value="n1">N1 Hydraulic Lab</option>
-          <option value="library">Library Reserve</option>
-          <option value="toilets">Central Toilets</option>
-        </select>
-      </div>
+        <div class="input-group">
+            <div class="dot green"></div>
+            <select id="start-node">
+                <option value="" disabled selected>From: Current Location</option>
+                <option value="s1">S1 Conference Room</option>
+                <option value="s2">S2 Computer Lab</option>
+                <option value="n1">N1 Hydraulic Lab</option>
+                <option value="library">Library Reserve</option>
+                <option value="toilets">Central Toilets</option>
+            </select>
+        </div>
+        <div class="input-group" style="border: none;">
+            <div class="dot red"></div>
+            <select id="end-node" onchange="manualNavigate()">
+                <option value="" disabled selected>To: Destination...</option>
+                <option value="s1">S1 Conference Room</option>
+                <option value="s2">S2 Computer Lab</option>
+                <option value="n1">N1 Hydraulic Lab</option>
+                <option value="library">Library Reserve</option>
+                <option value="toilets">Central Toilets</option>
+            </select>
+        </div>
     </div>
 
     <div id="ai-assistant" onclick="startVoiceAI()">
-      <img src="https://cdn-icons-png.flaticon.com/512/2103/2103633.png" alt="AI">
+        <img src="https://cdn-icons-png.flaticon.com/512/2103/2103633.png" alt="AI">
     </div>
 
     <button id="map-btn" onclick="toggleMap()">MAP</button>
-    <div id="ar-instruction">WALK STRAIGHT 10 PACES</div>
+    <div id="ar-instruction">WALK STRAIGHT</div>
 
     <div id="map-container">
-      <svg width="100%" height="100%" viewBox="0 0 200 200">
-        <path d="M40 60 H160 M40 140 H160 M100 60 V140" fill="none" stroke="#00ffcc" stroke-width="2" />
-        <circle id="map-pointer" cx="100" cy="100" r="6" fill="#ff4d4d" />
-      </svg>
+        <svg width="100%" height="100%" viewBox="0 0 200 200">
+            <path d="M40 60 H160 M40 140 H160 M100 60 V140" fill="none" stroke="#00ffcc" stroke-width="2" />
+            <circle id="map-pointer" cx="100" cy="100" r="6" fill="#ff4d4d" />
+        </svg>
     </div>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
-      <a-assets>
-        <a-asset-item id="arrow-obj" src="https://raw.githack.com/n5ro/aframe-extras/master/assets/models/check_mark.glb"></a-asset-item>
-      </a-assets>
+        <a-assets>
+            <a-asset-item id="arrow-obj" src="https://raw.githack.com/n5ro/aframe-extras/master/assets/models/check_mark.glb"></a-asset-item>
+        </a-assets>
 
-      <a-entity id="ar-arrow" gltf-model="#arrow-obj" position="0 0 -3" scale="0.5 0.5 0.5" visible="false"
-                animation="property: position; to: 0 0.2 -3; dir: alternate; dur: 1000; loop: true"></a-entity>
-      
-      <a-entity camera></a-entity>
+        <a-entity id="ar-arrow" gltf-model="#arrow-obj" position="0 0 -3" scale="0.5 0.5 0.5" visible="false"
+                  animation="property: position; to: 0 0.2 -3; dir: alternate; dur: 1000; loop: true"></a-entity>
+        
+        <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-      const speaker = window.speechSynthesis;
-      let currentPos = "s1";
-
-      const locations = {
-        "s1": { x: 150, y: 140, msg: "South Wing" },
-        "s2": { x: 120, y: 140, msg: "South Wing" },
-        "n1": { x: 150, y: 60, msg: "North Wing" },
-        "library": { x: 50, y: 140, msg: "Entrance Wing" },
-        "toilets": { x: 100, y: 100, msg: "Central Passage" }
-      };
-
-      function toggleMap() {
-        const m = document.getElementById('map-container');
-        m.style.display = (m.style.display === 'block') ? 'none' : 'block';
-      }
-
-      function speak(text) {
-        speaker.cancel();
-        const ut = new SpeechSynthesisUtterance(text);
-        ut.pitch = 1.1; ut.rate = 0.95;
-        speaker.speak(ut);
-      }
-
-      function manualNavigate() {
-        const start = document.getElementById('start-node').value || "s1";
-        const end = document.getElementById('end-node').value;
-        runNavigation(start, end);
-      }
-
-      function runNavigation(start, end) {
-        if (start === end) return speak("You are already there.");
-        
-        const inst = `From ${start}, walk toward the ${locations[end].msg}. Proceed 15 paces then look for the entrance on your left.`;
-        speak(inst);
-        
-        // Show AR Floating UI
-        document.getElementById('ar-instruction').innerText = "GO TOWARD " + end.toUpperCase();
-        document.getElementById('ar-instruction').style.display = "block";
-        document.getElementById('ar-arrow').setAttribute('visible', 'true');
-
-        // Move Map Pointer
-        const ptr = document.getElementById('map-pointer');
-        ptr.setAttribute('cx', locations[end].x);
-        ptr.setAttribute('cy', locations[end].y);
-      }
-
-      // 4. SMART AI VOICE ASSISTANT
-      window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-      const recognition = new SpeechRecognition();
-
-      function startVoiceAI() {
-        recognition.start();
-        speak("I'm listening. Where are you going?");
-      }
-
-      recognition.onresult = (event) => {
-        const cmd = event.results[0][0].transcript.toLowerCase();
-        for (let room in locations) {
-          if (cmd.includes(room)) {
-            document.getElementById('end-node').value = room;
-            runNavigation(currentPos, room);
-            break;
-          }
+        // Security Check: Ensure user is logged in
+        if (!localStorage.getItem('hit_user_role')) {
+            window.location.href = 'index.html';
         }
-      };
+
+        const speaker = window.speechSynthesis;
+        const locations = {
+            "s1": { x: 150, y: 140, msg: "South Wing" },
+            "s2": { x: 120, y: 140, msg: "South Wing" },
+            "n1": { x: 150, y: 60, msg: "North Wing" },
+            "library": { x: 50, y: 140, msg: "Entrance Wing" },
+            "toilets": { x: 100, y: 100, msg: "Central Passage" }
+        };
+
+        function toggleMap() {
+            const m = document.getElementById('map-container');
+            m.style.display = (m.style.display === 'block') ? 'none' : 'block';
+        }
+
+        function speak(text) {
+            speaker.cancel();
+            const ut = new SpeechSynthesisUtterance(text);
+            ut.pitch = 1.1; ut.rate = 0.95;
+            speaker.speak(ut);
+        }
+
+        function manualNavigate() {
+            const start = document.getElementById('start-node').value || "s1";
+            const end = document.getElementById('end-node').value;
+            runNavigation(start, end);
+        }
+
+        function runNavigation(start, end) {
+            if (start === end) return speak("You are already there.");
+            
+            const inst = `From ${start}, walk toward the ${locations[end].msg}. Proceed 15 paces then look for the entrance on your left.`;
+            speak(inst);
+            
+            document.getElementById('ar-instruction').innerText = "GO TOWARD " + end.toUpperCase();
+            document.getElementById('ar-instruction').style.display = "block";
+            document.getElementById('ar-arrow').setAttribute('visible', 'true');
+
+            const ptr = document.getElementById('map-pointer');
+            ptr.setAttribute('cx', locations[end].x);
+            ptr.setAttribute('cy', locations[end].y);
+        }
+
+        window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = new SpeechRecognition();
+
+        function startVoiceAI() {
+            recognition.start();
+            speak("Listening. Where are you going?");
+        }
+
+        recognition.onresult = (event) => {
+            const cmd = event.results[0][0].transcript.toLowerCase();
+            for (let room in locations) {
+                if (cmd.includes(room)) {
+                    document.getElementById('end-node').value = room;
+                    runNavigation("current", room);
+                    break;
+                }
+            }
+        };
     </script>
-  </body>
+</body>
 </html>
