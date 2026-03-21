@@ -41,7 +41,7 @@
                     <button type="button" id="signupBtn" class="flex-1 bg-cyan-600 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-cyan-700 transition active:scale-95 text-sm uppercase">Sign Up</button>
                 </div>
             </form>
-            <p class="text-center text-[10px] text-slate-400 mt-6 italic">Authorized access only for HIT Campus personnel.</p>
+            <p id="status-msg" class="text-center text-[10px] text-slate-400 mt-6 italic">Authorized access only for HIT Campus personnel.</p>
         </div>
     </div>
 
@@ -68,14 +68,13 @@
             const password = document.getElementById('password').value;
             const role = document.getElementById('role').value;
 
-            // 🛡️ THE EUSTACE GUARD (Admin Logic)
             if (role === 'admin') {
                 if (email !== "eustacemadawu1@gmail.com" || password !== "password") {
-                    alert("⚠️ SECURITY ALERT: Unauthorized Admin access denied.");
+                    alert("⚠️ SECURITY: Unauthorized Admin access denied.");
                     return;
                 }
                 if (type === 'signup') {
-                    alert("⚠️ NOTICE: Admin account is pre-registered. Please use LOGIN.");
+                    alert("Admin is pre-registered. Please Login.");
                     return;
                 }
             }
@@ -105,7 +104,11 @@
                 window.location.href = 'dashboard.html';
 
             } catch (e) {
-                alert("Auth Error: " + e.message);
+                if (e.code === 'auth/too-many-requests') {
+                    alert("🛡️ LOCKED: Too many attempts. Wait 15 mins or change network.");
+                } else {
+                    alert("Error: " + e.message);
+                }
             }
         };
 
