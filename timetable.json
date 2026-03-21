@@ -1,5 +1,33 @@
 {
-  "1.2": [{"day": 1, "time": "08:00", "subject": "Intro to E-Commerce", "room": "S1", "lecturer": "Dr. X"}],
-  "2.2": [{"day": 2, "time": "10:00", "subject": "Database Systems", "room": "N1", "lecturer": "Prof. Y"}],
-  "4.2": [{"day": 4, "time": "13:00", "subject": "Capstone Project", "room": "Hub", "lecturer": "Chairman"}]
+  "1.2": [
+    {"day": 1, "time": "08:00", "subject": "Technopreneurship II (HIT 1201)", "room": "Auto", "lecturer": "TBA"},
+    {"day": 1, "time": "10:15", "subject": "Visual Programming (BEC 1204)", "room": "Lab", "lecturer": "Mr. T. Nyamugudza"},
+    {"day": 3, "time": "08:00", "subject": "Technopreneurship II (HIT 1201)", "room": "Auto", "lecturer": "TBA"},
+    {"day": 3, "time": "10:15", "subject": "Database Design (BEC 1202)", "room": "Lab", "lecturer": "Mr. A Zvikaramba"},
+    {"day": 4, "time": "08:00", "subject": "Quantitative Analysis (BEC 1201)", "room": "Lecture Hall", "lecturer": "Mr. P. Makunura"},
+    {"day": 5, "time": "08:00", "subject": "Visual Programming (BEC 1204)", "room": "Lab", "lecturer": "Mr. T. Nyamugudza"}
+  ],
+  "2.2": [
+    {"day": 1, "time": "08:00", "subject": "Enterprise Systems (BEC 2203)", "room": "Lecture Hall", "lecturer": "Ms. Nhema"},
+    {"day": 1, "time": "10:15", "subject": "Object Oriented Programming (BEC 2205)", "room": "Lab", "lecturer": "Mr. Mudhara"},
+    {"day": 1, "time": "14:00", "subject": "E-Commerce Website Eng II (BEC 2201)", "room": "Lab", "lecturer": "Mr. T. Nyamugudza"},
+    {"day": 2, "time": "08:00", "subject": "Electronic Marketing (BEC 2202)", "room": "Lecture Hall", "lecturer": "Dr. M. Nyatsambo"},
+    {"day": 2, "time": "10:15", "subject": "Object Oriented Programming (BEC 2205)", "room": "Lab", "lecturer": "Mr. Mudhara"},
+    {"day": 2, "time": "16:00", "subject": "Mandarin for Business II (BEC 2206)", "room": "Multi", "lecturer": "Mrs. M. Chiwenga"},
+    {"day": 3, "time": "08:00", "subject": "Electronic Marketing (BEC 2202)", "room": "Lecture Hall", "lecturer": "Dr. M. Nyatsambo"},
+    {"day": 3, "time": "10:15", "subject": "Financial Management (BEC 2204)", "room": "Lecture Hall", "lecturer": "Mr. P. Makunura"},
+    {"day": 3, "time": "14:00", "subject": "Big Data & Analytics (HIT 2203)", "room": "Auto", "lecturer": "Ms. K. B. Chimwayi"},
+    {"day": 4, "time": "10:15", "subject": "Enterprise Systems (BEC 2203)", "room": "Lecture Hall", "lecturer": "Ms. Nhema"},
+    {"day": 4, "time": "14:00", "subject": "Financial Management (BEC 2204)", "room": "Lecture Hall", "lecturer": "Mr. P. Makunura"},
+    {"day": 4, "time": "16:00", "subject": "Mandarin for Business II (BEC 2206)", "room": "Multi", "lecturer": "Mrs. M. Chiwenga"},
+    {"day": 5, "time": "08:00", "subject": "Technopreneurship IV (HIT 2201)", "room": "Auto", "lecturer": "TBA"},
+    {"day": 5, "time": "10:15", "subject": "E-Commerce Website Eng II (BEC 2201)", "room": "Lab", "lecturer": "Mr. T. Nyamugudza"}
+  ],
+  "4.2": [
+    {"day": 1, "time": "08:00", "subject": "Java for E-Commerce (BEC 4201)", "room": "Lab", "lecturer": "Mr. Mudhara"},
+    {"day": 2, "time": "08:00", "subject": "E-Commerce Applications (BEC 4204)", "room": "Lab", "lecturer": "Ms. Nhema"},
+    {"day": 3, "time": "14:00", "subject": "Java for E-Commerce (BEC 4201)", "room": "Lab", "lecturer": "Mr. Mudhara"},
+    {"day": 4, "time": "10:15", "subject": "E-Business Innovation (BEC 4206)", "room": "Lecture Hall", "lecturer": "Ms. Soraidema"},
+    {"day": 5, "time": "08:00", "subject": "E-Commerce Applications (BEC 4204)", "room": "Lab", "lecturer": "Ms. Nhema"}
+  ]
 }
