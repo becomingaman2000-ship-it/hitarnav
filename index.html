@@ -2,58 +2,83 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>HIT Precision AR-Nav</title>
+    <title>HIT AI AR-Navigator Pro</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    
     <style>
-      body { margin: 0; overflow: hidden; font-family: 'Inter', sans-serif; }
-      #nav-panel {
-        position: fixed; top: 10px; left: 50%; transform: translateX(-50%);
-        width: 95%; background: rgba(255,255,255,0.95); border-radius: 12px; padding: 10px;
-        z-index: 3000; box-shadow: 0 8px 32px rgba(0,0,0,0.3); border: 1px solid #00ffcc;
-      }
-      .input-row { display: flex; align-items: center; padding: 5px 0; }
-      .dot { width: 8px; height: 8px; border-radius: 50%; margin-right: 10px; }
-      select { border: none; width: 100%; font-size: 14px; background: transparent; font-weight: 600; }
+      body { margin: 0; overflow: hidden; font-family: 'Inter', -apple-system, sans-serif; background: #000; }
       
-      #ai-btn {
-        position: fixed; bottom: 30px; right: 20px; width: 65px; height: 65px;
-        background: radial-gradient(circle, #00ffcc, #0088aa); border-radius: 50%;
-        z-index: 4000; display: flex; align-items: center; justify-content: center;
-        box-shadow: 0 0 20px #00ffcc; cursor: pointer;
+      /* InDrive Style Navigation Panel */
+      #nav-panel {
+        position: fixed; top: 15px; left: 50%; transform: translateX(-50%);
+        width: 92%; background: rgba(255, 255, 255, 0.95); border-radius: 16px; padding: 12px;
+        z-index: 3000; box-shadow: 0 10px 30px rgba(0,0,0,0.4); border: 1px solid #00ffcc;
       }
+      .input-group { display: flex; align-items: center; margin-bottom: 8px; border-bottom: 1px solid #eee; padding-bottom: 6px; }
+      .dot { width: 10px; height: 10px; border-radius: 50%; margin-right: 12px; }
+      .green { background: #2ecc71; } .red { background: #e74c3c; }
+      
+      select { border: none; width: 100%; font-size: 15px; outline: none; color: #1a1a1a; background: transparent; font-weight: 600; cursor: pointer; }
+
+      /* AI Voice Assistant Icon */
+      #ai-assistant {
+        position: fixed; bottom: 35px; right: 25px;
+        width: 75px; height: 75px; background: radial-gradient(circle, #00ffcc, #00b4d8);
+        border-radius: 50%; z-index: 4000; display: flex; align-items: center; justify-content: center;
+        box-shadow: 0 0 25px rgba(0, 255, 204, 0.6); cursor: pointer; animation: pulse 2s infinite;
+      }
+      #ai-assistant img { width: 38px; filter: brightness(0) invert(1); }
+
+      @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.08); } 100% { transform: scale(1); } }
+
+      /* Map Button and Container */
+      #map-btn {
+        position: fixed; bottom: 35px; left: 25px;
+        width: 65px; height: 65px; background: #1a1a1a; color: #00ffcc; border: 2px solid #00ffcc;
+        border-radius: 50%; z-index: 3000; font-weight: bold; cursor: pointer;
+      }
+
       #map-container {
-        display: none; position: fixed; top: 15%; left: 5%; width: 90%; height: 60%;
-        background: #000; border: 2px solid #00ffcc; border-radius: 15px; z-index: 2500;
+        display: none; position: fixed; top: 18%; left: 5%; width: 90%; height: 65%;
+        background: #050a14; border: 2px solid #00ffcc; border-radius: 20px; z-index: 2500; overflow: hidden;
       }
-      #status-toast {
-        position: fixed; bottom: 110px; left: 50%; transform: translateX(-50%);
-        background: rgba(0,255,204,0.2); color: #00ffcc; padding: 8px 20px;
-        border-radius: 20px; border: 1px solid #00ffcc; z-index: 2000; font-size: 12px;
+
+      /* AR UI Elements */
+      #ar-instruction {
+        position: fixed; bottom: 130px; left: 50%; transform: translateX(-50%);
+        background: rgba(0, 0, 0, 0.8); color: #00ffcc; padding: 12px 25px;
+        border-radius: 40px; z-index: 2000; font-weight: 800; border: 1px solid #00ffcc;
+        display: none; text-transform: uppercase; letter-spacing: 1px;
       }
     </style>
   </head>
 
   <body>
     <div id="nav-panel">
-      <div class="input-row"><div class="dot" style="background:#2ecc71"></div>
+      <div class="input-group">
+        <div class="dot green"></div>
         <select id="start-node">
-          <option value="entrance">Main Entrance</option>
-          </select>
+          <option value="entrance">Main Entrance Gate</option>
+        </select>
       </div>
-      <div class="input-row"><div class="dot" style="background:#e74c3c"></div>
-        <select id="end-node" onchange="initiateNav()"></select>
+      <div class="input-group" style="border: none;">
+        <div class="dot red"></div>
+        <select id="end-node" onchange="manualNavigate()">
+          <option value="" disabled selected>Select Destination...</option>
+        </select>
       </div>
     </div>
 
-    <div id="ai-btn" onclick="startVoiceAI()">
-        <img src="https://cdn-icons-png.flaticon.com/512/2103/2103633.png" width="30" style="filter:invert(1)">
+    <div id="ai-assistant" onclick="startVoiceAI()">
+      <img src="https://cdn-icons-png.flaticon.com/512/2103/2103633.png" alt="AI">
     </div>
 
-    <div id="status-toast">Detecting Movement...</div>
+    <button id="map-btn" onclick="toggleMap()">MAP</button>
+    <div id="ar-instruction">FOLLOW THE PATH</div>
 
     <div id="map-container">
-      <canvas id="topViewCanvas"></canvas>
+      <canvas id="mapCanvas"></canvas>
     </div>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false; trackingMethod: best;">
@@ -61,59 +86,48 @@
         <a-asset-item id="building-model" src="assets/building.glb"></a-asset-item>
       </a-assets>
 
-      <a-entity id="building" gltf-model="#building-model" position="0 -1.5 -5" scale="1 1 1" wireframe-material></a-entity>
+      <a-entity id="building" gltf-model="#building-model" position="0 -1.5 -5" scale="1 1 1" wireframe-toggle></a-entity>
 
-      <a-entity id="navigation-path" line="color: #00ffcc; opacity: 0.8"></a-entity>
+      <a-sphere id="nav-target-marker" radius="0.4" color="#ff4d4d" visible="false"
+                animation="property: position; dir: alternate; dur: 1000; loop: true; to: 0 0.5 -10"></a-sphere>
       
-      <a-sphere id="target-point" radius="0.3" color="#ff4d4d" visible="false"
-                animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; loop: true"></a-sphere>
-
       <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-      // 1. COMPREHENSIVE ROOM DATABASE (All 20+ Rooms)
-      const rooms = {
-        "n1": {x: 35, y: 10, name: "Hydraulic Lab"}, "n2": {x: 28, y: 10, name: "Biotech Lab"},
-        "n3": {x: 21, y: 10, name: "CPSE Lab"}, "n4": {x: 14, y: 10, name: "CS 1"},
-        "n5": {x: 7, y: 10, name: "IME 1"}, "n6": {x: 0, y: 10, name: "Pharmacy Lab"},
-        "s1": {x: 35, y: 30, name: "Conference Room"}, "s2": {x: 28, y: 30, name: "CS Lab 2"},
-        "s3": {x: 21, y: 30, name: "SME Lab 1"}, "s4": {x: 14, y: 30, name: "SME Lab 2"},
-        "s8": {x: 0, y: 30, name: "IME 3"}, "library": {x: -10, y: 40, name: "Library Reserve"},
-        "chairman": {x: 30, y: 45, name: "Chairman Office"}, "toilets": {x: 15, y: 20, name: "Restrooms"}
-        // Add remaining rooms following this 7m/9m grid pattern
+      const speaker = window.speechSynthesis;
+      let userLocation = "entrance";
+
+      // 1. COMPREHENSIVE ROOM DATABASE (Grid-based 7m x 5m)
+      const hitRooms = {
+        "entrance": { x: 0, y: 0, name: "Main Entrance", block: "Center" },
+        "n1": { x: 35, y: 10, name: "Hydraulic Lab", block: "North" },
+        "n2": { x: 28, y: 10, name: "Biotech Lab", block: "North" },
+        "n3": { x: 21, y: 10, name: "CPSE Lab", block: "North" },
+        "n4": { x: 14, y: 10, name: "CS Lab 1", block: "North" },
+        "n5": { x: 7, y: 10, name: "IME 1", block: "North" },
+        "n6": { x: 0, y: 10, name: "Pharmacy Lab", block: "North" },
+        "s1": { x: 35, y: -10, name: "Conference Room", block: "South" },
+        "s2": { x: 28, y: -10, name: "Computer Lab 2", block: "South" },
+        "s3": { x: 21, y: -10, name: "SME Lab 1", block: "South" },
+        "s4": { x: 14, y: -10, name: "SME Lab 2", block: "South" },
+        "s8": { x: 0, y: -10, name: "IME 3", block: "South" },
+        "library": { x: -15, y: 5, name: "Library Reserve", block: "West" },
+        "chairman": { x: 40, y: 0, name: "Chairman's Office", block: "East" },
+        "toilets": { x: 10, y: 0, name: "Restrooms", block: "Center" }
       };
 
-      // Populate Select Menus
-      const startSelect = document.getElementById('start-node');
-      const endSelect = document.getElementById('end-node');
-      Object.keys(rooms).forEach(id => {
-        let opt = `<option value="${id}">${id.toUpperCase()}: ${rooms[id].name}</option>`;
-        startSelect.innerHTML += opt;
-        endSelect.innerHTML += opt;
+      // Populate Dropdowns
+      const sSelect = document.getElementById('start-node');
+      const eSelect = document.getElementById('end-node');
+      Object.keys(hitRooms).forEach(id => {
+        const opt = `<option value="${id}">${id.toUpperCase()}: ${hitRooms[id].name}</option>`;
+        sSelect.innerHTML += opt;
+        eSelect.innerHTML += opt;
       });
 
-      // 2. REAL-TIME MOVEMENT & ROTATION
-      let userPos = { x: 0, y: 0, z: 0 };
-      let compassHeading = 0;
-
-      window.addEventListener('deviceorientation', (e) => {
-        compassHeading = e.webkitCompassHeading || (360 - e.alpha);
-        const b = document.getElementById('building');
-        b.setAttribute('rotation', `0 ${compassHeading} 0`);
-      });
-
-      // Pedometer Logic (Simulated movement for demo - can link to Acceleration API)
-      window.addEventListener('devicemotion', (e) => {
-        let acc = e.accelerationIncludingGravity;
-        if(Math.abs(acc.x) > 1.5) { // Simple step detection
-           userPos.z -= 0.1; // Move forward in AR space
-           updateUI();
-        }
-      });
-
-      // 3. TRANSPARENT WIREFRAME LOGIC
-      AFRAME.registerComponent('wireframe-material', {
+      // 2. TRANSPARENT WIREFRAME COMPONENT
+      AFRAME.registerComponent('wireframe-toggle', {
         init: function () {
           this.el.addEventListener('model-loaded', () => {
             const mesh = this.el.getObject3D('mesh');
@@ -122,49 +136,87 @@
                 node.material.wireframe = true;
                 node.material.color.set(0x00ffcc);
                 node.material.transparent = true;
-                node.material.opacity = 0.3;
+                node.material.opacity = 0.25;
               }
             });
           });
         }
       });
 
-      // 4. VOICE & PATHFINDING
-      const synth = window.speechSynthesis;
+      // 3. ENHANCED VOICE ASSISTANT (UK/US English Only)
       function speak(text) {
-        const u = new SpeechSynthesisUtterance(text);
-        u.voice = synth.getVoices().find(v => v.name.includes("Google UK English Male")) || u.voice;
-        u.rate = 0.85; synth.speak(u);
+        speaker.cancel();
+        const ut = new SpeechSynthesisUtterance(text);
+        const voices = speaker.getVoices();
+        ut.voice = voices.find(v => (v.lang === 'en-GB' || v.lang === 'en-US') && v.name.includes("Male")) || voices[0];
+        ut.rate = 0.88;
+        ut.pitch = 1.0;
+        speaker.speak(ut);
       }
 
-      function initiateNav() {
-        const start = startSelect.value;
-        const end = endSelect.value;
-        const dx = rooms[end].x - rooms[start].x;
-        const dy = rooms[end].y - rooms[start].y;
-        
-        const pathMsg = `Exit your current room. Turn ${dx > 0 ? 'Right' : 'Left'}. Walk ${Math.abs(dx)} meters. Then turn toward the ${rooms[end].name}.`;
-        speak(pathMsg);
-        
-        // Update AR Path
-        const target = document.getElementById('target-point');
-        target.setAttribute('position', `${dx} -1 ${-dy}`);
-        target.setAttribute('visible', 'true');
+      // 4. NAVIGATION ENGINE
+      function toggleMap() {
+        const m = document.getElementById('map-container');
+        m.style.display = (m.style.display === 'block') ? 'none' : 'block';
       }
+
+      function manualNavigate() {
+        const start = sSelect.value;
+        const end = eSelect.value;
+        navigate(start, end);
+      }
+
+      function navigate(start, end) {
+        if (start === end) return speak("You have already arrived.");
+
+        const dx = hitRooms[end].x - hitRooms[start].x;
+        const dy = hitRooms[end].y - hitRooms[start].y;
+        const totalPaces = Math.round(Math.abs(dx) + Math.abs(dy));
+
+        let turn = dx > 0 ? "RIGHT" : "LEFT";
+        let instruction = `From ${start}, exit the door and turn ${turn}. Walk approximately ${totalPaces} paces toward the ${hitRooms[end].block} block. Destination ${end} will be visible soon.`;
+        
+        speak(instruction);
+        document.getElementById('ar-instruction').innerText = "Walk to " + end.toUpperCase();
+        document.getElementById('ar-instruction').style.display = "block";
+
+        // Place AR Target Marker in 3D Space (meter-based)
+        const marker = document.getElementById('nav-target-marker');
+        marker.setAttribute('position', `${dx} -1 ${-dy}`);
+        marker.setAttribute('visible', 'true');
+      }
+
+      // 5. REAL-TIME ROTATION
+      window.addEventListener('deviceorientation', (e) => {
+        const heading = e.webkitCompassHeading || (360 - e.alpha);
+        if (heading) {
+          document.getElementById('building').setAttribute('rotation', `0 ${heading} 0`);
+        }
+      });
+
+      // 6. SMART AI VOICE RECOGNITION
+      window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+      const recognition = new SpeechRecognition();
+      recognition.lang = 'en-US';
 
       function startVoiceAI() {
-        const rec = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        rec.onresult = (e) => {
-            const cmd = e.results[0][0].transcript.toLowerCase();
-            Object.keys(rooms).forEach(r => { if(cmd.includes(r)) { endSelect.value = r; initiateNav(); }});
-        };
-        rec.start();
-        speak("Which room can I help you find?");
+        recognition.start();
+        speak("I am ready. Where are you going?");
       }
 
-      function updateUI() {
-        document.getElementById('status-toast').innerText = `POS: ${userPos.z.toFixed(1)}m | Heading: ${Math.round(compassHeading)}°`;
-      }
+      recognition.onresult = (event) => {
+        const cmd = event.results[0][0].transcript.toLowerCase();
+        let found = false;
+        Object.keys(hitRooms).forEach(id => {
+          if (cmd.includes(id) || cmd.includes(hitRooms[id].name.toLowerCase())) {
+            eSelect.value = id;
+            navigate(sSelect.value, id);
+            found = true;
+          }
+        });
+        if(!found) speak("I couldn't find that room in the HIT directory. Try again.");
+      };
+
     </script>
   </body>
 </html>
