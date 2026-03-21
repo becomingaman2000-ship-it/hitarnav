@@ -6,30 +6,30 @@
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
-        #exit-btn { position: fixed; top: 20px; left: 20px; z-index: 5000; background: #ff3b30; color: white; border: none; padding: 14px 24px; border-radius: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.4); font-size: 11px; text-transform: uppercase; }
-        #nav-ui { position: fixed; top: 90px; left: 50%; transform: translateX(-50%); width: 85%; background: white; z-index: 5000; padding: 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #00ffcc; }
-        select { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #eee; background: #fafafa; font-size: 15px; font-weight: 800; color: #333; outline: none; }
+        #exit-btn { position: fixed; top: 20px; left: 20px; z-index: 5000; background: #ff3b30; color: white; border: none; padding: 14px 24px; border-radius: 15px; font-weight: 900; box-shadow: 0 4px 20px rgba(0,0,0,0.4); text-transform: uppercase; font-size: 10px; }
+        #nav-ui { position: fixed; top: 90px; left: 50%; transform: translateX(-50%); width: 85%; background: white; z-index: 5000; padding: 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #00ffcc; text-align: center; }
+        select { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #eee; background: #f9f9f9; font-size: 14px; font-weight: 800; }
     </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
 
-    <button id="exit-btn" onclick="location.href='dashboard.html'">✕ Exit AR View</button>
+    <button id="exit-btn" onclick="location.href='dashboard.html'">✕ Close AR</button>
 
     <div id="nav-ui">
-        <p style="margin: 0 0 10px 0; font-size: 9px; font-weight: 900; color: #999; text-transform: uppercase; letter-spacing: 2px;">HIT Venue Navigation</p>
+        <p style="margin: 0 0 10px 0; font-size: 8px; font-weight: 900; color: #999; text-transform: uppercase; letter-spacing: 2px;">HIT Venue Target</p>
         <select id="dest">
             <option value="">Choose Destination...</option>
             <option value="S1 Lab">S1 Computer Lab</option>
             <option value="N1 Hydraulic">N1 Hydraulic Lab</option>
             <option value="Library">HIT Library</option>
             <option value="Cafeteria">Main Cafeteria</option>
-            <option value="Admin Block">Administration Block</option>
+            <option value="Admin Block">Admin Block</option>
         </select>
     </div>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" renderer="logarithmicDepthBuffer: true;">
-        <a-sphere id="marker" radius="0.4" color="#00ffcc" visible="false" position="0 -1 -7" 
-                  animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; dur: 800; loop: true"></a-sphere>
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
+        <a-sphere id="marker" radius="0.3" color="#00ffcc" visible="false" position="0 -1 -5" 
+                  animation="property: position; to: 0 -0.5 -5; dir: alternate; dur: 1000; loop: true"></a-sphere>
         <a-entity camera></a-entity>
     </a-scene>
 
@@ -51,23 +51,16 @@
 
         document.getElementById('dest').onchange = async (e) => {
             const dest = e.target.value;
-            const email = localStorage.getItem('hit_user_email') || "Guest_User";
-            
+            const email = localStorage.getItem('hit_user_email') || "Guest";
             if(!dest) return;
-            
             document.getElementById('marker').setAttribute('visible', 'true');
 
-            // 📍 Log tracking to Eustace's Database
-            try {
-                await addDoc(collection(db, "NavigationLogs"), {
-                    email: email,
-                    destination: dest,
-                    timestamp: serverTimestamp(),
-                    role: localStorage.getItem('hit_user_role') || 'guest'
-                });
-            } catch (err) {
-                console.error("Database Log Error: ", err);
-            }
+            await addDoc(collection(db, "NavigationLogs"), {
+                email: email,
+                destination: dest,
+                timestamp: serverTimestamp(),
+                role: localStorage.getItem('hit_user_role') || 'guest'
+            });
         };
     </script>
 </body>
