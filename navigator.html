@@ -2,14 +2,26 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HIT AR | Fullscreen Navigator</title>
+    <title>HIT AR | Full Blueprint Access</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        /* Remove white borders and ensure camera fills screen */
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: black; }
-        #arjs-video { object-fit: cover !important; width: 100vw !important; height: 100vh !important; margin: 0 !important; }
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: transparent; }
+        
+        /* Forces AR.js video to background and full size */
+        #arjs-video {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            height: 100% !important;
+            object-fit: cover !important;
+            z-index: -1 !important; 
+        }
+
+        .ui-layer { z-index: 10; pointer-events: none; }
+        .interactive { pointer-events: auto; }
         
         .glowing-brain {
             box-shadow: 0 0 25px #22d3ee;
@@ -17,116 +29,126 @@
         }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
         
-        /* Custom scrollbar for the long dropdown */
-        select::-webkit-scrollbar { width: 5px; }
-        select::-webkit-scrollbar-thumb { background: #22d3ee; border-radius: 10px; }
+        /* Dropdown styling for long lists */
+        select { border: 1px solid rgba(255,255,255,0.1); }
     </style>
 </head>
 <body>
 
-    <div class="fixed inset-0 z-50 pointer-events-none flex flex-col justify-between p-4">
+    <div class="ui-layer fixed inset-0 flex flex-col justify-between p-4">
         
-        <div class="w-full flex flex-col gap-3 pointer-events-auto">
+        <div class="w-full flex flex-col gap-3 interactive">
             <div class="flex justify-between items-center">
-                <button onclick="location.href='dashboard.html'" class="bg-black/60 text-white p-3 rounded-xl font-black text-[10px] border border-white/10 uppercase">✕ Back</button>
-                <div class="bg-cyan-950/80 backdrop-blur-md px-4 py-2 rounded-full border border-cyan-400/30">
-                    <p id="ai-status" class="text-[9px] font-black uppercase text-cyan-400 tracking-widest">AR Mode Active</p>
+                <button onclick="location.href='dashboard.html'" class="bg-black/80 text-white p-3 rounded-xl font-black text-[10px] border border-white/10 uppercase">✕ Exit</button>
+                <div class="bg-cyan-950/90 backdrop-blur-md px-4 py-2 rounded-full border border-cyan-400/30">
+                    <p id="ai-status" class="text-[9px] font-black uppercase text-cyan-400 tracking-widest">Master Nav Active</p>
                 </div>
             </div>
 
-            <div class="bg-black/40 backdrop-blur-xl p-4 rounded-3xl border border-white/10 flex flex-col gap-2">
+            <div class="bg-black/70 backdrop-blur-xl p-4 rounded-3xl border border-white/10 flex flex-col gap-2 shadow-2xl">
                 <div class="grid grid-cols-2 gap-2">
                     <div>
-                        <label class="text-[8px] font-black text-cyan-400 uppercase ml-2">Current Location</label>
-                        <select id="start-node" class="w-full bg-slate-900/80 text-white text-[10px] p-3 rounded-xl border border-white/10 outline-none">
-                            <option value="">Select Start...</option>
-                            <optgroup label="S-BLOCK (Ground)">
-                                <option value="s1">S1 Conference</option>
-                                <option value="s2">S2 CS Lab</option>
-                                <option value="s3">S3 SME Lab 1</option>
-                                <option value="s4">S4 SME Lab 2</option>
-                                <option value="s5">S5 FPT 4</option>
-                                <option value="s10b">EC Office</option>
-                                <option value="lib">Library Reserve</option>
-                            </optgroup>
-                            <optgroup label="N-BLOCK (Ground)">
-                                <option value="n1">N1 Hydraulic</option>
-                                <option value="n4">N4 CS 1</option>
-                                <option value="n6">N6 Pharmacy</option>
-                                <option value="n10">N10 Analytic</option>
-                            </optgroup>
+                        <label class="text-[8px] font-black text-cyan-400 uppercase ml-2">From</label>
+                        <select id="start-node" class="w-full bg-slate-900/95 text-white text-[10px] p-3 rounded-xl outline-none">
+                            <option value="">My Location...</option>
+                            <option value="entrance">Main Entrance</option>
                         </select>
                     </div>
                     <div>
-                        <label class="text-[8px] font-black text-cyan-400 uppercase ml-2">Destination</label>
-                        <select id="end-node" class="w-full bg-slate-900/80 text-white text-[10px] p-3 rounded-xl border border-white/10 outline-none">
-                            <option value="">Select Target...</option>
-                            </select>
+                        <label class="text-[8px] font-black text-cyan-400 uppercase ml-2">To Destination</label>
+                        <select id="end-node" class="w-full bg-slate-900/95 text-white text-[10px] p-3 rounded-xl outline-none">
+                            <option value="">Select Room...</option>
+                            <optgroup id="s-group" label="S-BLOCK (S1-S16)"></optgroup>
+                            <optgroup id="n-group" label="N-BLOCK (N1-N12)"></optgroup>
+                            <optgroup id="off-group" label="OFFICES & LABS"></optgroup>
+                        </select>
                     </div>
                 </div>
-                <button id="go-btn" class="w-full bg-cyan-600 text-white py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-cyan-500">Start Navigation</button>
+                <button id="go-btn" class="w-full bg-cyan-600 text-white py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-cyan-500 transition shadow-lg">Start AR Navigation</button>
             </div>
         </div>
 
-        <div class="flex flex-col items-center pointer-events-auto mb-6">
+        <div class="flex flex-col items-center interactive mb-6">
             <div id="voice-trigger" class="glowing-brain w-16 h-16 bg-cyan-500 rounded-full flex items-center justify-center text-2xl shadow-2xl">🎙️</div>
-            <p id="ai-text" class="text-white text-[10px] font-medium mt-3 italic drop-shadow-lg text-center bg-black/20 px-4 rounded-full">"Tap mic or use the menu above"</p>
+            <p id="ai-text" class="text-white text-[10px] font-medium mt-3 italic drop-shadow-lg text-center bg-black/40 px-4 py-1 rounded-full">"Speak any Room Code (e.g. S15 or N4)"</p>
         </div>
     </div>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
-        <a-sphere id="nav-marker" radius="0.4" color="#22d3ee" visible="false" position="0 0 -5"
-                  animation="property: position; to: 0 0.5 -5; dir: alternate; dur: 1000; loop: true"></a-sphere>
-        <a-text id="marker-label" value="" align="center" position="0 1.2 -5" scale="2 2 2" color="#00ffcc" visible="false"></a-text>
+        <a-sphere id="nav-marker" radius="0.5" color="#22d3ee" visible="false" position="0 0 -6"
+                  animation="property: position; to: 0 0.5 -6; dir: alternate; dur: 1000; loop: true"></a-sphere>
+        <a-text id="marker-label" value="" align="center" position="0 1.5 -6" scale="2.5 2.5 2.5" color="#00ffcc" visible="false"></a-text>
         <a-entity camera></a-entity>
     </a-scene>
 
     <script>
+        // COMPREHENSIVE ROOM DATABASE FROM BLUEPRINT
         const rooms = {
+            // S-BLOCK (S1 to S16)
             "s1": "S1 Conference Room", "s2": "S2 CS Lab", "s3": "S3 SME Lab 1", "s4": "S4 SME Lab 2",
-            "s5": "S5 FPT 4", "s6": "S6 FE 4", "s7": "S7 CS 4", "s8": "S8 IME 3",
-            "s10b": "EC Office", "s13b": "Chairman FE Office", "lib": "Library Reserve",
-            "n1": "N1 Hydraulic Lab", "n2": "N2 Bio Tech Lab", "n3": "N3 CPSE Lab",
-            "n4": "N4 CS 1", "n5": "N5 IME 1", "n6": "N6 Pharmacy Lab", "n7": "N7 FPT Lab",
-            "n10": "N10 Analytic Lab", "n12": "N12 Pneumatic Lab"
+            "s5": "S5 FPT 4", "s6": "S6 FE 4", "s7": "S7 CS 4", "s8": "S8 IME 3", 
+            "s10a": "Chairman Office", "s10b": "EC Office", "s11a": "FE Office", "s11b": "FE Office 2",
+            "s12a": "FE Office 3", "s12b": "FE Office 4", "s13a": "Secretary FE", "s13b": "Chairman FE",
+            "s14": "TDC Office", "s15a": "Secretary TDC", "s15b": "Chairman TDC", "s16": "Director Tech Centre",
+
+            // N-BLOCK (N1 to N12)
+            "n1": "N1 Hydraulic Lab", "n2": "N2 Bio Tech Lab", "n3": "N3 CPSE Lab", "n4": "N4 CS 1",
+            "n5": "N5 IME 1", "n6": "N6 Pharmacy Lab", "n7": "N7 FPT Lab", "n8": "N8 FPT Lab 2",
+            "n9": "N9 FE 1", "n10": "N10 Analytic Lab", "n11": "N11 Pharmaceutical Lab", "n12": "N12 Pneumatic Lab",
+
+            // SPECIALS
+            "lib": "Library Reserve", "toilets": "Main Toilets"
         };
 
-        // Populate Destination Dropdown
-        const endSelect = document.getElementById('end-node');
+        // DYNAMIC POPULATION
+        const sGroup = document.getElementById('s-group');
+        const nGroup = document.getElementById('n-group');
+        const offGroup = document.getElementById('off-group');
+
         for (let id in rooms) {
             let opt = document.createElement('option');
             opt.value = id;
             opt.innerHTML = rooms[id];
-            endSelect.appendChild(opt);
+            if(id.startsWith('s')) sGroup.appendChild(opt);
+            else if(id.startsWith('n')) nGroup.appendChild(opt);
+            else offGroup.appendChild(opt);
         }
 
         const startNav = () => {
-            const destId = endSelect.value;
+            const destId = document.getElementById('end-node').value;
             if(!destId) return;
-            
             const name = rooms[destId];
             document.getElementById('nav-marker').setAttribute('visible', 'true');
             document.getElementById('marker-label').setAttribute('visible', 'true');
-            document.getElementById('marker-label').setAttribute('value', name);
-            document.getElementById('ai-text').innerText = `Directing you to ${name}...`;
+            document.getElementById('marker-label').setAttribute('value', name.toUpperCase());
+            document.getElementById('ai-text').innerText = `Path found to ${name}. Follow the marker.`;
         };
 
         document.getElementById('go-btn').onclick = startNav;
 
-        // Voice Logic (Same as before)
-        const voiceBtn = document.getElementById('voice-trigger');
+        // VOICE AI LOGIC
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        
-        voiceBtn.onclick = () => { recognition.start(); document.getElementById('ai-status').innerText = "Listening..."; };
-        
+        document.getElementById('voice-trigger').onclick = () => {
+            recognition.start();
+            document.getElementById('ai-status').innerText = "Listening...";
+        };
+
         recognition.onresult = (event) => {
-            const transcript = event.results[0][0].transcript.toLowerCase();
+            const input = event.results[0][0].transcript.toLowerCase();
+            document.getElementById('ai-status').innerText = "Processing...";
+            
+            let found = false;
             for (let id in rooms) {
-                if(transcript.includes(id) || transcript.includes(rooms[id].toLowerCase())) {
-                    endSelect.value = id;
+                if(input.includes(id) || input.includes(rooms[id].toLowerCase())) {
+                    document.getElementById('end-node').value = id;
                     startNav();
+                    found = true;
                     break;
                 }
+            }
+            if(!found) {
+                document.getElementById('ai-text').innerText = "Room not found. Try saying S 15 or N 10.";
+                document.getElementById('ai-status').innerText = "Ready";
             }
         };
     </script>
