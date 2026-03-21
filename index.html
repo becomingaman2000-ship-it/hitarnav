@@ -3,41 +3,45 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HIT Navigator | Login</title>
+    <title>HIT Navigator | Secure Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
 <body class="bg-slate-900 min-h-screen flex items-center justify-center p-4">
 
-    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden">
-        <div class="bg-gradient-to-r from-cyan-500 to-blue-600 p-8 text-white text-center">
-            <h1 class="text-3xl font-bold italic tracking-tighter">HIT NAVIGATOR</h1>
-            <p class="text-sm opacity-80">Enterprise Campus Management</p>
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-700">
+        <div class="bg-gradient-to-r from-cyan-600 to-blue-700 p-8 text-white text-center">
+            <h1 class="text-3xl font-black italic tracking-tighter uppercase">HIT NAVIGATOR</h1>
+            <p class="text-xs opacity-80 tracking-widest mt-1">Enterprise Management System</p>
         </div>
 
         <div class="p-8">
             <form id="auth-form">
                 <div class="mb-4">
-                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">HIT Email</label>
-                    <input type="email" id="email" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-cyan-400" required>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">User Email</label>
+                    <input type="email" id="email" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 bg-slate-50" placeholder="e.g. name@hit.ac.zw" required>
                 </div>
+
                 <div class="mb-4">
-                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Account Type</label>
-                    <select id="role" class="w-full p-3 border rounded-xl outline-none bg-slate-50">
-                        <option value="student">Student</option>
-                        <option value="staff">Staff</option>
-                        <option value="guest">Guest</option>
-                        <option value="admin">Admin (Chairman)</option>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">Account Type</label>
+                    <select id="role" class="w-full p-3 border rounded-xl outline-none bg-slate-50 text-slate-700 font-medium">
+                        <option value="student">Student Account</option>
+                        <option value="staff">Staff Member</option>
+                        <option value="guest">Guest Visitor</option>
+                        <option value="admin">System Admin (Chairman)</option>
                     </select>
                 </div>
+
                 <div class="mb-6">
-                    <label class="block text-xs font-bold text-slate-400 mb-1 uppercase">Password</label>
-                    <input type="password" id="password" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-cyan-400" required>
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">Password</label>
+                    <input type="password" id="password" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 bg-slate-50" placeholder="••••••••" required>
                 </div>
-                <div class="flex gap-2">
-                    <button type="button" id="loginBtn" class="flex-1 bg-slate-100 text-slate-700 py-3 rounded-xl font-bold hover:bg-slate-200 transition">LOGIN</button>
-                    <button type="button" id="signupBtn" class="flex-1 bg-cyan-500 text-white py-3 rounded-xl font-bold shadow-lg hover:bg-cyan-600 transition">SIGN UP</button>
+
+                <div class="flex gap-3">
+                    <button type="button" id="loginBtn" class="flex-1 bg-slate-100 text-slate-700 py-4 rounded-2xl font-bold hover:bg-slate-200 transition active:scale-95 text-sm uppercase">Login</button>
+                    <button type="button" id="signupBtn" class="flex-1 bg-cyan-600 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-cyan-700 transition active:scale-95 text-sm uppercase">Sign Up</button>
                 </div>
             </form>
+            <p class="text-center text-[10px] text-slate-400 mt-6 italic">Authorized access only for HIT Campus personnel.</p>
         </div>
     </div>
 
@@ -60,23 +64,37 @@
         const db = getFirestore(app);
 
         window.handleAuth = async (type) => {
-            const email = document.getElementById('email').value;
+            const email = document.getElementById('email').value.trim().toLowerCase();
             const password = document.getElementById('password').value;
             const role = document.getElementById('role').value;
+
+            // 🛡️ THE EUSTACE GUARD (Admin Logic)
+            if (role === 'admin') {
+                if (email !== "eustacemadawu1@gmail.com" || password !== "password") {
+                    alert("⚠️ SECURITY ALERT: Unauthorized Admin access denied.");
+                    return;
+                }
+                if (type === 'signup') {
+                    alert("⚠️ NOTICE: Admin account is pre-registered. Please use LOGIN.");
+                    return;
+                }
+            }
 
             try {
                 let userCredential;
                 if (type === 'signup') {
                     userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    // Save user to their respective table (Collection)
                     await setDoc(doc(db, role + "s", userCredential.user.uid), {
                         email: email,
                         role: role,
-                        createdAt: serverTimestamp()
+                        registeredAt: serverTimestamp()
                     });
                 } else {
                     userCredential = await signInWithEmailAndPassword(auth, email, password);
                 }
 
+                // Log this session for the Chairman's review
                 await addDoc(collection(db, "Logins"), {
                     uid: userCredential.user.uid,
                     email: email,
@@ -87,7 +105,10 @@
                 localStorage.setItem('hit_user_role', role);
                 localStorage.setItem('hit_user_email', email);
                 window.location.href = 'dashboard.html';
-            } catch (e) { alert(e.message); }
+
+            } catch (e) {
+                alert("Auth Error: " + e.message);
+            }
         };
 
         document.getElementById('loginBtn').onclick = () => window.handleAuth('login');
