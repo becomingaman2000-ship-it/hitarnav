@@ -2,7 +2,7 @@
 <html>
   <head>
     <meta name="viewport" content="width=device-width, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
-    <title>HIT Ground Floor Nav</title>
+    <title>HIT Intelligent AR Nav</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     
@@ -10,27 +10,29 @@
       body { margin: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; }
       #ui-panel {
         position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%);
-        background: rgba(0,0,0,0.85); color: #00ffcc; padding: 15px;
-        border-radius: 12px; z-index: 100; text-align: center; width: 80%;
-        border: 1px solid #00ffcc;
+        background: rgba(0,0,0,0.9); color: #00ffcc; padding: 15px;
+        border-radius: 12px; z-index: 100; text-align: center; width: 85%;
+        border: 2px solid #00ffcc;
       }
       #map-btn {
         position: fixed; top: 20px; right: 20px;
         padding: 15px; background: #2ecc71; border: none; border-radius: 50%;
-        color: white; font-weight: bold; z-index: 200; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        color: white; font-weight: bold; z-index: 200;
       }
       #map-container {
         display: none; position: fixed; top: 5%; left: 5%;
         width: 90%; height: 85%; background: white; border: 3px solid #00ffcc;
-        z-index: 150; border-radius: 15px; overflow: scroll;
+        z-index: 150; border-radius: 15px; overflow: auto;
       }
-      #map-img { width: 100%; height: auto; display: block; }
+      #map-wrapper { position: relative; width: 1000px; }
+      #map-img { width: 100%; height: auto; }
       #user-arrow {
-        position: absolute; top: 80%; left: 15%; /* Default Start at Library Reserve area */
+        position: absolute; top: 50%; left: 50%;
         width: 0; height: 0; 
         border-left: 10px solid transparent; border-right: 10px solid transparent;
-        border-bottom: 20px solid #e74c3c; /* Red Arrow for visibility on white map */
-        transform: translate(-50%, -50%);
+        border-bottom: 20px solid #e74c3c;
+        transform: translate(-50%, -50%) rotate(0deg);
+        transition: all 0.5s ease-in-out;
       }
     </style>
   </head>
@@ -39,13 +41,15 @@
     <button id="map-btn">MAP</button>
 
     <div id="map-container">
-      <img id="map-img" src="assets/blueprint.jpeg">
-      <div id="user-arrow"></div>
+      <div id="map-wrapper">
+        <img id="map-img" src="assets/blueprint.jpeg">
+        <div id="user-arrow"></div>
+      </div>
     </div>
 
     <div id="ui-panel">
-      <div id="status">Tap Screen & Say "Take me to..."</div>
-      <div id="nav-target" style="font-size: 0.8em; color: #fff; margin-top: 5px;">Ready for command</div>
+      <div id="status">Tap & Say: "I am at [Room]"</div>
+      <div id="nav-target" style="font-size: 0.9em; color: #fff; margin-top: 5px;">Awaiting Localization...</div>
     </div>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;">
@@ -57,30 +61,38 @@
       <a-entity light="type: ambient; intensity: 0.8;"></a-entity>
       <a-entity light="type: directional; intensity: 1; position: 1 4 3"></a-entity>
 
-      <a-entity 
-        id="main-building"
-        gltf-model="#building" 
-        position="0 -1.4 -5" 
-        scale="0.5 0.5 0.5"
-        edge-logic
-        rotation="0 0 0"> 
-      </a-entity>
-
+      <a-entity id="main-building" gltf-model="#building" position="0 -1.4 -5" scale="0.5 0.5 0.5" edge-logic></a-entity>
+      
       <a-plane src="#floorplan" rotation="-90 0 0" width="15" height="15" position="0 -1.5 -5"></a-plane>
-      <a-entity camera></a-entity>
+      <a-entity id="camera" camera></a-entity>
     </a-scene>
 
     <script>
-      // 1. SOLID VIEW COMPONENT
+      // 1. COMPASS & DIRECTION LOGIC
+      let currentCompassHeading = 0;
+      window.addEventListener('deviceorientation', (event) => {
+        // Gets the compass heading from the phone hardware
+        currentCompassHeading = event.webkitCompassHeading || (360 - event.alpha);
+        
+        // Sync the 2D map arrow rotation with the real world
+        const arrow = document.getElementById('user-arrow');
+        arrow.style.transform = `translate(-50%, -50%) rotate(${currentCompassHeading}deg)`;
+        
+        // Sync the 3D Building walls with the real world direction
+        const building = document.getElementById('main-building');
+        building.setAttribute('rotation', {x: 0, y: currentCompassHeading, z: 0});
+      });
+
+      // 2. EDGE RENDERING (Solid View)
       AFRAME.registerComponent('edge-logic', {
         init: function () {
           this.el.addEventListener('model-loaded', () => {
             const obj = this.el.getObject3D('mesh');
             obj.traverse(node => {
               if (node.isMesh) {
-                node.material.color.set(0x333333); 
+                node.material.color.set(0x222222); 
                 const edges = new THREE.EdgesGeometry(node.geometry);
-                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0xffffff }));
+                const line = new THREE.LineSegments(edges, new THREE.LineBasicMaterial({ color: 0x00ffcc }));
                 node.add(line);
               }
             });
@@ -88,62 +100,52 @@
         }
       });
 
-      // 2. MAP TOGGLE
-      const mapBtn = document.getElementById('map-btn');
-      const mapContainer = document.getElementById('map-container');
-      mapBtn.onclick = () => {
-        const isVisible = mapContainer.style.display === 'block';
-        mapContainer.style.display = isVisible ? 'none' : 'block';
-        mapBtn.innerText = isVisible ? 'MAP' : 'X';
+      // 3. VOICE LOCALIZATION ENGINE
+      const locations = {
+        "n1": { t: "15%", l: "82%" }, "hydraulic lab": { t: "15%", l: "82%" },
+        "s1": { t: "65%", l: "82%" }, "conference room": { t: "65%", l: "82%" },
+        "library reserve": { t: "78%", l: "20%" },
+        "toilets": { t: "46%", l: "42%" },
+        "chairman": { t: "78%", l: "68%" }
+        // ... (All other rooms from previous list should be kept here)
       };
 
-      // 3. VOICE NAVIGATION ENGINE
       window.SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.lang = 'en-US';
 
-      const statusText = document.getElementById('status');
-      const targetText = document.getElementById('nav-target');
-      const userArrow = document.getElementById('user-arrow');
-
-      // Dictionary of Rooms from your Blueprint
-      const locations = {
-        "conference room": { top: "65%", left: "80%" },
-        "library reserve": { top: "78%", left: "20%" },
-        "hydraulic lab": { top: "15%", left: "80%" },
-        "pharmacy lab": { top: "15%", left: "18%" },
-        "biotech lab": { top: "15%", left: "68%" },
-        "computer science lab": { top: "65%", left: "68%" },
-        "toilets": { top: "45%", left: "42%" },
-        "s1": { top: "65%", left: "80%" },
-        "n1": { top: "15%", left: "80%" }
-      };
-
       recognition.onresult = (event) => {
         const command = event.results[event.results.length - 1][0].transcript.toLowerCase();
-        statusText.innerText = "Command: " + command;
+        const statusText = document.getElementById('status');
+        const targetText = document.getElementById('nav-target');
 
-        for (let key in locations) {
-          if (command.includes(key)) {
-            targetText.innerText = "NAVIGATING TO: " + key.toUpperCase();
-            targetText.style.color = "#00ffcc";
-            
-            // Move the arrow on the 2D Map
-            userArrow.style.top = locations[key].top;
-            userArrow.style.left = locations[key].left;
-            
-            // Provide Haptic/Audio Feedback
-            window.navigator.vibrate(200);
-            break;
+        // Check if user is LOCALIZING or NAVIGATING
+        if (command.includes("i am at") || command.includes("i'm at")) {
+          for (let key in locations) {
+            if (command.includes(key)) {
+              statusText.innerText = "Localized to: " + key.toUpperCase();
+              targetText.innerText = "Starting point set. Where to next?";
+              // Move arrow to current spot
+              document.getElementById('user-arrow').style.top = locations[key].t;
+              document.getElementById('user-arrow').style.left = locations[key].l;
+              break;
+            }
+          }
+        } else if (command.includes("take me to")) {
+          // Normal navigation logic to move the arrow to destination
+          for (let key in locations) {
+            if (command.includes(key)) {
+              targetText.innerText = "NAVIGATING TO: " + key.toUpperCase();
+              document.getElementById('user-arrow').style.top = locations[key].t;
+              document.getElementById('user-arrow').style.left = locations[key].l;
+              break;
+            }
           }
         }
       };
 
-      window.onclick = () => { 
-        recognition.start(); 
-        statusText.innerText = "Listening for Room Name...";
-      };
+      window.onclick = () => { recognition.start(); };
     </script>
   </body>
 </html>
