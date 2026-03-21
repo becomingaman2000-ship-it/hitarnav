@@ -2,107 +2,131 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HIT VR | Real-time Collision Nav</title>
+    <title>HIT AR | Fullscreen Navigator</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <script src="https://cdn.jsdelivr.net/gh/donmccurdy/aframe-extras@v6.1.1/dist/aframe-extras.min.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body { margin: 0; overflow: hidden; background: #000; }
-        .ui-panel { pointer-events: none; position: fixed; inset: 0; z-index: 999; display: flex; flex-direction: column; justify-content: space-between; padding: 20px; }
-        .interactive { pointer-events: auto; }
+        /* Remove white borders and ensure camera fills screen */
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: black; }
+        #arjs-video { object-fit: cover !important; width: 100vw !important; height: 100vh !important; margin: 0 !important; }
+        
+        .glowing-brain {
+            box-shadow: 0 0 25px #22d3ee;
+            animation: pulse 2s infinite;
+        }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        
+        /* Custom scrollbar for the long dropdown */
+        select::-webkit-scrollbar { width: 5px; }
+        select::-webkit-scrollbar-thumb { background: #22d3ee; border-radius: 10px; }
     </style>
 </head>
 <body>
 
-    <div class="ui-panel">
-        <div class="flex justify-between items-start interactive">
-            <button onclick="location.href='dashboard.html'" class="bg-black/80 text-white p-3 rounded-2xl font-black text-[10px] uppercase border border-white/20">✕ Exit</button>
-            
-            <div class="flex flex-col gap-2 items-end">
-                <div class="bg-cyan-950/90 p-3 rounded-2xl border border-cyan-400/30 text-right">
-                    <p id="ai-status" class="text-[9px] font-black uppercase text-cyan-400">VR System Active</p>
-                    <p id="pos-display" class="text-[10px] text-white font-mono">Pos: 0, 0, 0</p>
+    <div class="fixed inset-0 z-50 pointer-events-none flex flex-col justify-between p-4">
+        
+        <div class="w-full flex flex-col gap-3 pointer-events-auto">
+            <div class="flex justify-between items-center">
+                <button onclick="location.href='dashboard.html'" class="bg-black/60 text-white p-3 rounded-xl font-black text-[10px] border border-white/10 uppercase">✕ Back</button>
+                <div class="bg-cyan-950/80 backdrop-blur-md px-4 py-2 rounded-full border border-cyan-400/30">
+                    <p id="ai-status" class="text-[9px] font-black uppercase text-cyan-400 tracking-widest">AR Mode Active</p>
                 </div>
-                <button id="toggle-vr" class="bg-white text-black px-4 py-2 rounded-xl font-black text-[10px] uppercase shadow-xl">Switch to 3D VR</button>
+            </div>
+
+            <div class="bg-black/40 backdrop-blur-xl p-4 rounded-3xl border border-white/10 flex flex-col gap-2">
+                <div class="grid grid-cols-2 gap-2">
+                    <div>
+                        <label class="text-[8px] font-black text-cyan-400 uppercase ml-2">Current Location</label>
+                        <select id="start-node" class="w-full bg-slate-900/80 text-white text-[10px] p-3 rounded-xl border border-white/10 outline-none">
+                            <option value="">Select Start...</option>
+                            <optgroup label="S-BLOCK (Ground)">
+                                <option value="s1">S1 Conference</option>
+                                <option value="s2">S2 CS Lab</option>
+                                <option value="s3">S3 SME Lab 1</option>
+                                <option value="s4">S4 SME Lab 2</option>
+                                <option value="s5">S5 FPT 4</option>
+                                <option value="s10b">EC Office</option>
+                                <option value="lib">Library Reserve</option>
+                            </optgroup>
+                            <optgroup label="N-BLOCK (Ground)">
+                                <option value="n1">N1 Hydraulic</option>
+                                <option value="n4">N4 CS 1</option>
+                                <option value="n6">N6 Pharmacy</option>
+                                <option value="n10">N10 Analytic</option>
+                            </optgroup>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="text-[8px] font-black text-cyan-400 uppercase ml-2">Destination</label>
+                        <select id="end-node" class="w-full bg-slate-900/80 text-white text-[10px] p-3 rounded-xl border border-white/10 outline-none">
+                            <option value="">Select Target...</option>
+                            </select>
+                    </div>
+                </div>
+                <button id="go-btn" class="w-full bg-cyan-600 text-white py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-cyan-500">Start Navigation</button>
             </div>
         </div>
 
-        <div class="flex flex-col items-center interactive mb-6">
-            <div id="voice-trigger" class="w-16 h-16 bg-cyan-500 rounded-full flex items-center justify-center text-2xl shadow-2xl mb-4">🎙️</div>
-            <p class="text-white text-[9px] font-black uppercase tracking-widest bg-black/40 px-4 py-1 rounded-full">Use On-Screen Joysticks to Walk</p>
+        <div class="flex flex-col items-center pointer-events-auto mb-6">
+            <div id="voice-trigger" class="glowing-brain w-16 h-16 bg-cyan-500 rounded-full flex items-center justify-center text-2xl shadow-2xl">🎙️</div>
+            <p id="ai-text" class="text-white text-[10px] font-medium mt-3 italic drop-shadow-lg text-center bg-black/20 px-4 rounded-full">"Tap mic or use the menu above"</p>
         </div>
     </div>
 
-    <a-scene embedded physics="debug: false; gravity: -9.8" renderer="antialias: true">
-        
-        <a-assets>
-            <a-asset-item id="hit-model" src="assets/hit_ground_floor.glb"></a-asset-item>
-        </a-assets>
-
-        <a-entity id="rig" movement-controls="constrainToNavMesh: true; speed: 0.2" position="0 0 0">
-            <a-entity camera position="0 1.6 0" look-controls="pointerLockEnabled: true">
-                <a-cursor color="#22d3ee" fuse="false"></a-cursor>
-            </a-entity>
-        </a-entity>
-
-        <a-entity id="building-model" 
-                  gltf-model="#hit-model" 
-                  position="0 0 0" 
-                  scale="1 1 1"
-                  static-body
-                  visible="false"> </a-entity>
-
-        <a-grid static-body material="opacity: 0.2; transparent: true"></a-grid>
-
-        <a-light type="ambient" intensity="0.7"></a-light>
-        <a-light type="directional" position="1 4 3" intensity="0.5"></a-light>
-
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
+        <a-sphere id="nav-marker" radius="0.4" color="#22d3ee" visible="false" position="0 0 -5"
+                  animation="property: position; to: 0 0.5 -5; dir: alternate; dur: 1000; loop: true"></a-sphere>
+        <a-text id="marker-label" value="" align="center" position="0 1.2 -5" scale="2 2 2" color="#00ffcc" visible="false"></a-text>
+        <a-entity camera></a-entity>
     </a-scene>
 
     <script>
-        const vrBtn = document.getElementById('toggle-vr');
-        const building = document.getElementById('building-model');
-        const scene = document.querySelector('a-scene');
-        let isVR = false;
-
-        // Toggle between AR (Camera) and VR (3D Model)
-        vrBtn.onclick = () => {
-            isVR = !isVR;
-            if (isVR) {
-                // VR MODE
-                building.setAttribute('visible', 'true');
-                scene.setAttribute('arjs', 'sourceType: dummy'); // Stop webcam
-                vrBtn.innerText = "Switch to AR View";
-                vrBtn.classList.replace('bg-white', 'bg-cyan-500');
-                vrBtn.classList.add('text-white');
-            } else {
-                // AR MODE
-                building.setAttribute('visible', 'false');
-                scene.setAttribute('arjs', 'sourceType: webcam'); // Start webcam
-                vrBtn.innerText = "Switch to 3D VR";
-                vrBtn.classList.replace('bg-cyan-500', 'bg-white');
-                vrBtn.classList.remove('text-white');
-            }
+        const rooms = {
+            "s1": "S1 Conference Room", "s2": "S2 CS Lab", "s3": "S3 SME Lab 1", "s4": "S4 SME Lab 2",
+            "s5": "S5 FPT 4", "s6": "S6 FE 4", "s7": "S7 CS 4", "s8": "S8 IME 3",
+            "s10b": "EC Office", "s13b": "Chairman FE Office", "lib": "Library Reserve",
+            "n1": "N1 Hydraulic Lab", "n2": "N2 Bio Tech Lab", "n3": "N3 CPSE Lab",
+            "n4": "N4 CS 1", "n5": "N5 IME 1", "n6": "N6 Pharmacy Lab", "n7": "N7 FPT Lab",
+            "n10": "N10 Analytic Lab", "n12": "N12 Pneumatic Lab"
         };
 
-        // Real-time Position Tracking for the "Chairman" display
-        const rig = document.getElementById('rig');
-        const posDisplay = document.getElementById('pos-display');
-        
-        setInterval(() => {
-            const pos = rig.getAttribute('position');
-            posDisplay.innerText = `X: ${pos.x.toFixed(1)} Y: ${pos.y.toFixed(1)} Z: ${pos.z.toFixed(1)}`;
-        }, 100);
+        // Populate Destination Dropdown
+        const endSelect = document.getElementById('end-node');
+        for (let id in rooms) {
+            let opt = document.createElement('option');
+            opt.value = id;
+            opt.innerHTML = rooms[id];
+            endSelect.appendChild(opt);
+        }
 
-        // Voice Logic integration
+        const startNav = () => {
+            const destId = endSelect.value;
+            if(!destId) return;
+            
+            const name = rooms[destId];
+            document.getElementById('nav-marker').setAttribute('visible', 'true');
+            document.getElementById('marker-label').setAttribute('visible', 'true');
+            document.getElementById('marker-label').setAttribute('value', name);
+            document.getElementById('ai-text').innerText = `Directing you to ${name}...`;
+        };
+
+        document.getElementById('go-btn').onclick = startNav;
+
+        // Voice Logic (Same as before)
+        const voiceBtn = document.getElementById('voice-trigger');
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        document.getElementById('voice-trigger').onclick = () => recognition.start();
+        
+        voiceBtn.onclick = () => { recognition.start(); document.getElementById('ai-status').innerText = "Listening..."; };
         
         recognition.onresult = (event) => {
-            const cmd = event.results[0][0].transcript.toLowerCase();
-            if(cmd.includes("teleport to s 2")) {
-                rig.setAttribute('position', '10 0 -5'); // Jump to S2 coordinates
+            const transcript = event.results[0][0].transcript.toLowerCase();
+            for (let id in rooms) {
+                if(transcript.includes(id) || transcript.includes(rooms[id].toLowerCase())) {
+                    endSelect.value = id;
+                    startNav();
+                    break;
+                }
             }
         };
     </script>
