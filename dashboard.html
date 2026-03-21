@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HIT Dashboard | fixed</title>
+    <title>HIT Dashboard | FIXED & Quick View</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -38,6 +38,13 @@
                 <button id="send-notif" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-xs uppercase hover:bg-black transition">Publish Message</button>
             </div>
 
+            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 text-center">
+                <h3 class="font-black text-slate-800 text-xs uppercase mb-4 tracking-widest">Academic Schedule</h3>
+                <button onclick="document.getElementById('tt-modal').style.display='flex'" class="w-full bg-slate-100 text-slate-700 py-4 rounded-2xl font-black text-xs uppercase hover:bg-slate-200 transition">
+                    🖼️ View Full Timetable
+                </button>
+            </div>
+
             <div id="student-setup" class="hidden bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                 <h3 class="font-black text-slate-800 text-xs uppercase mb-4 tracking-widest">🔗 Student Sync</h3>
                 <input type="text" id="stud-id" class="w-full p-3 bg-slate-50 border rounded-xl text-sm mb-3" placeholder="Student ID (H23...)">
@@ -46,10 +53,16 @@
                     <option value="2.2">Part 2.2</option>
                     <option value="4.2">Part 4.2</option>
                 </select>
-                <button id="save-profile" class="w-full bg-cyan-600 text-white py-3 rounded-xl font-bold text-xs uppercase shadow-md">Link Timetable</button>
+                <button id="save-profile" class="w-full bg-cyan-600 text-white py-3 rounded-xl font-bold text-xs uppercase shadow-md hover:bg-cyan-700">Link Timetable</button>
             </div>
         </div>
     </main>
+
+    <div id="tt-modal" style="display:none;" class="fixed inset-0 bg-black/80 z-[9999] p-6 flex-col items-center justify-center">
+        <button onclick="this.parentElement.style.display='none'" class="mb-4 bg-white text-black px-6 py-2 rounded-full font-black text-xs uppercase hover:scale-105 transition">CLOSE VIEW</button>
+        <img src="timetable.jpeg" class="max-w-full max-h-[80vh] rounded-lg shadow-2xl border-4 border-white">
+        <p class="text-white text-[10px] mt-4 opacity-50 uppercase tracking-widest">HIT Semester 2 Schedule</p>
+    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -67,12 +80,12 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // 🛡️ ROLE DETECTION
+        // 🛡️ ROLE DETECTION & Fallback
         const role = localStorage.getItem('hit_user_role');
         const email = localStorage.getItem('hit_user_email');
 
         if (!role) {
-            alert("Session expired. Please login again.");
+            alert("No session found. Redirecting to login.");
             window.location.href = 'index.html';
         }
 
@@ -93,7 +106,7 @@
                 const d = doc.data();
                 const time = d.timestamp ? d.timestamp.toDate().toLocaleTimeString() : "Just now";
                 html += `
-                <div class="bg-white p-4 rounded-2xl border-l-4 border-cyan-500 shadow-sm mb-3">
+                <div class="bg-white p-4 rounded-2xl border-l-4 border-cyan-500 shadow-sm mb-3 hover:bg-slate-50 transition-colors">
                     <p class="text-slate-800 text-sm font-medium mb-1">${d.message}</p>
                     <div class="flex justify-between items-center mt-2">
                         <span class="text-[8px] font-black text-cyan-600 uppercase">HIT OFFICIAL</span>
@@ -128,7 +141,7 @@
                 if(!id) return alert("Please enter Student ID");
                 localStorage.setItem('hit_stud_id', id);
                 localStorage.setItem('hit_stud_part', part);
-                alert("✅ Profile Linked to " + part);
+                alert("✅ Profile Linked: " + part);
                 location.reload();
             };
         }
