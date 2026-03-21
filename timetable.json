@@ -1,0 +1,5 @@
+{
+  "1.2": [{"day": 1, "time": "08:00", "subject": "Intro to E-Commerce", "room": "S1", "lecturer": "Dr. X"}],
+  "2.2": [{"day": 2, "time": "10:00", "subject": "Database Systems", "room": "N1", "lecturer": "Prof. Y"}],
+  "4.2": [{"day": 4, "time": "13:00", "subject": "Capstone Project", "room": "Hub", "lecturer": "Chairman"}]
+}
