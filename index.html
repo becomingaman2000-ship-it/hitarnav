@@ -84,7 +84,6 @@
                 let userCredential;
                 if (type === 'signup') {
                     userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    // Save user to their respective table (Collection)
                     await setDoc(doc(db, role + "s", userCredential.user.uid), {
                         email: email,
                         role: role,
@@ -94,7 +93,6 @@
                     userCredential = await signInWithEmailAndPassword(auth, email, password);
                 }
 
-                // Log this session for the Chairman's review
                 await addDoc(collection(db, "Logins"), {
                     uid: userCredential.user.uid,
                     email: email,
