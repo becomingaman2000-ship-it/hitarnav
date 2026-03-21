@@ -6,19 +6,19 @@
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <style>
-        #exit-btn { position: fixed; top: 20px; left: 20px; z-index: 5000; background: #ff3b30; color: white; border: none; padding: 14px 24px; border-radius: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.4); font-size: 12px; }
+        #exit-btn { position: fixed; top: 20px; left: 20px; z-index: 5000; background: #ff3b30; color: white; border: none; padding: 14px 24px; border-radius: 15px; font-weight: 800; cursor: pointer; box-shadow: 0 4px 20px rgba(0,0,0,0.4); font-size: 11px; text-transform: uppercase; }
         #nav-ui { position: fixed; top: 90px; left: 50%; transform: translateX(-50%); width: 85%; background: white; z-index: 5000; padding: 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 2px solid #00ffcc; }
-        select { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #eee; background: #fafafa; font-size: 16px; font-weight: bold; color: #333; outline: none; }
+        select { width: 100%; padding: 15px; border-radius: 12px; border: 1px solid #eee; background: #fafafa; font-size: 15px; font-weight: 800; color: #333; outline: none; }
     </style>
 </head>
 <body style="margin: 0; overflow: hidden;">
 
-    <button id="exit-btn" onclick="location.href='dashboard.html'">✕ QUIT NAVIGATION</button>
+    <button id="exit-btn" onclick="location.href='dashboard.html'">✕ Exit AR View</button>
 
     <div id="nav-ui">
-        <p style="margin: 0 0 10px 0; font-size: 10px; font-weight: 900; color: #999; text-transform: uppercase; letter-spacing: 1px;">Route Destination</p>
+        <p style="margin: 0 0 10px 0; font-size: 9px; font-weight: 900; color: #999; text-transform: uppercase; letter-spacing: 2px;">HIT Venue Navigation</p>
         <select id="dest">
-            <option value="">Choose Venue...</option>
+            <option value="">Choose Destination...</option>
             <option value="S1 Lab">S1 Computer Lab</option>
             <option value="N1 Hydraulic">N1 Hydraulic Lab</option>
             <option value="Library">HIT Library</option>
@@ -28,8 +28,8 @@
     </div>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" renderer="logarithmicDepthBuffer: true;">
-        <a-sphere id="marker" radius="0.5" color="#00ffcc" visible="false" position="0 -1 -8" 
-                  animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; dur: 1000; loop: true"></a-sphere>
+        <a-sphere id="marker" radius="0.4" color="#00ffcc" visible="false" position="0 -1 -7" 
+                  animation="property: scale; to: 1.2 1.2 1.2; dir: alternate; dur: 800; loop: true"></a-sphere>
         <a-entity camera></a-entity>
     </a-scene>
 
@@ -51,11 +51,10 @@
 
         document.getElementById('dest').onchange = async (e) => {
             const dest = e.target.value;
-            const email = localStorage.getItem('hit_user_email') || "Unauthorized";
+            const email = localStorage.getItem('hit_user_email') || "Guest_User";
             
             if(!dest) return;
             
-            // Show the AR target
             document.getElementById('marker').setAttribute('visible', 'true');
 
             // 📍 Log tracking to Eustace's Database
@@ -64,11 +63,10 @@
                     email: email,
                     destination: dest,
                     timestamp: serverTimestamp(),
-                    role: localStorage.getItem('hit_user_role') || 'unknown'
+                    role: localStorage.getItem('hit_user_role') || 'guest'
                 });
-                console.log("Tracking Logged: " + dest);
             } catch (err) {
-                console.error("Tracking Error: ", err);
+                console.error("Database Log Error: ", err);
             }
         };
     </script>
