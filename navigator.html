@@ -1,214 +1,227 @@
 <!DOCTYPE html>
 <html>
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HIT AR | Master Navigator Pro</title>
-    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-    <script src="https://cdn.tailwindcss.com"></script>
-    <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; font-family: 'Inter', sans-serif; }
-        #arjs-video { position: fixed !important; top: 0; left: 0; width: 100% !important; height: 100% !important; object-fit: cover !important; z-index: -1 !important; }
-        .ui-layer { z-index: 10; pointer-events: none; }
-        .interactive { pointer-events: auto; }
-        .ai-wave { background: linear-gradient(90deg, #22d3ee, #0891b2, #22d3ee); background-size: 200% 200%; animation: wave 2s linear infinite; }
-        @keyframes wave { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
-        #map-overlay { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(120%); }
-        #map-overlay.active { transform: translateY(0); }
-    </style>
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+
+<script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+<script src="https://cdn.tailwindcss.com"></script>
+
+<style>
+body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:transparent;}
+#arjs-video{position:fixed;width:100%;height:100%;object-fit:cover;z-index:-1}
+
+/* VR BUTTON FIX */
+.a-enter-vr-button{
+    background:rgba(0,0,0,0.6)!important;
+    border-radius:12px!important;
+    right:15px!important;
+}
+
+.ui-layer{z-index:10;pointer-events:none}
+.interactive{pointer-events:auto}
+
+.ai-wave{
+    background:linear-gradient(90deg,#22d3ee,#0891b2,#22d3ee);
+    animation:wave 2s linear infinite;
+}
+@keyframes wave{0%{background-position:0%}100%{background-position:200%}}
+</style>
 </head>
+
 <body>
 
-    <div id="map-overlay" class="fixed inset-x-0 bottom-0 z-[100] p-4 interactive">
-        <div class="bg-slate-900/95 backdrop-blur-2xl border-t-2 border-cyan-500 rounded-t-[3rem] p-6 shadow-2xl">
-            <div class="flex justify-between items-center mb-6">
-                <div class="flex items-center gap-2">
-                    <div class="w-2 h-2 bg-cyan-500 rounded-full animate-ping"></div>
-                    <h3 class="text-white font-black text-xs uppercase tracking-[0.2em]">Floor 0: Master Blueprint</h3>
-                </div>
-                <button onclick="document.getElementById('map-overlay').classList.remove('active')" class="bg-white/10 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
-            </div>
-            <img src="blueprint.jpeg" class="w-full rounded-[2rem] border border-white/10 mb-4 shadow-inner" alt="Campus Map">
-        </div>
-    </div>
+<div class="ui-layer fixed inset-0 flex flex-col justify-end p-6">
+<div class="interactive">
 
-    <div class="ui-layer fixed inset-0 flex flex-col justify-between p-6">
-        <div class="flex justify-between items-center interactive">
-            <button onclick="location.href='dashboard.html'" class="bg-black/60 backdrop-blur-md text-white px-5 py-3 rounded-2xl font-black text-[10px] uppercase border border-white/10 flex items-center gap-2">
-                <span class="text-lg">←</span> Back
-            </button>
-            <button onclick="document.getElementById('map-overlay').classList.add('active')" class="bg-white/10 backdrop-blur-md text-white px-5 py-3 rounded-2xl font-black text-[10px] uppercase border border-white/10">
-                🗺 Explore Map
-            </button>
-        </div>
+<select id="end-node" class="bg-black text-white p-3 rounded-xl w-full"></select>
 
-        <div class="space-y-4 interactive">
-            <div class="bg-black/50 backdrop-blur-2xl p-4 rounded-[2.5rem] border border-white/10 shadow-2xl">
-                <div class="flex flex-col gap-2">
-                    <select id="start-node" class="bg-slate-900/90 text-cyan-400 text-[10px] p-3 rounded-xl outline-none border border-cyan-500/30 font-bold uppercase">
-                        <option value="entrance">📍 Start: Main Entrance</option>
-                        <option value="s1">📍 Start: S1 Conference</option>
-                        <option value="n1">📍 Start: N1 Hydraulic</option>
-                    </select>
+<button id="go-btn" class="ai-wave w-full py-3 mt-2 text-white rounded-xl">
+Start Navigation
+</button>
 
-                    <select id="end-node" class="bg-slate-800/80 text-white text-[11px] p-3 rounded-xl outline-none border border-white/5 font-bold">
-                        <option value="">Where are we going?</option>
-                        <optgroup label="S-BLOCK" id="s-group"></optgroup>
-                        <optgroup label="N-BLOCK" id="n-group"></optgroup>
-                    </select>
-                    <button id="go-btn" class="ai-wave text-white py-3 mt-1 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg">Activate Path</button>
-                </div>
-            </div>
+</div>
+</div>
 
-            <div class="flex flex-col items-center pb-6">
-                <div id="voice-trigger" class="w-16 h-16 bg-cyan-500 rounded-full flex items-center justify-center text-2xl shadow-2xl cursor-pointer active:scale-90 transition-transform">🎙️</div>
-                <div class="mt-4 bg-black/60 backdrop-blur-lg border border-white/10 px-6 py-2 rounded-full text-center max-w-[280px]">
-                    <p id="ai-text" class="text-cyan-400 text-[9px] font-black uppercase tracking-tighter">AI Assistant Standing By</p>
-                    <p id="ai-status" class="text-white/60 text-[8px] font-medium mt-1">Ready for VR/AR Navigation</p>
-                </div>
-            </div>
-        </div>
-    </div>
+<a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: true">
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: true">
-        <a-assets>
-            <a-asset-item id="building-mesh" src="building.glb"></a-asset-item>
-        </a-assets>
+<!-- DESTINATION -->
+<a-sphere id="marker" radius="0.4" color="#22d3ee" visible="false"></a-sphere>
+<a-text id="label" align="center" color="#fff" visible="false"></a-text>
 
-        <a-entity id="vr-building" gltf-model="#building-mesh" position="0 0 0" visible="false"></a-entity>
+<!-- DIRECTION -->
+<a-cone id="arrow" radius-bottom="0.2" height="0.6" color="#22d3ee" visible="false"></a-cone>
 
-        <a-entity id="path-dots"></a-entity>
-        
-        <a-entity id="destination-marker" visible="false">
-            <a-cone height="0.6" radius-bottom="0.25" color="#22d3ee" position="0 2.5 0" rotation="180 0 0" animation="property: position; to: 0 2.2 0; dir: alternate; dur: 1000; loop: true"></a-cone>
-            <a-text id="marker-label" value="" align="center" position="0 3.2 0" scale="2.5 2.5 2.5" color="#ffffff"></a-text>
-        </a-entity>
+<!-- PATH -->
+<a-entity id="path"></a-entity>
 
-        <a-entity id="rig" position="0 1.6 0">
-            <a-entity camera look-controls wasd-controls="acceleration: 20"></a-entity>
-        </a-entity>
+<a-entity camera></a-entity>
 
-        <a-light type="ambient" color="#fff"></a-light>
-    </a-scene>
+</a-scene>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<script type="module">
 
-        const firebaseConfig = {
-            apiKey: "AIzaSyCcendyEqvaAw7ldnFOSwDEfQb74L_wfmw",
-            authDomain: "hit-navigator-56b2b.firebaseapp.com",
-            projectId: "hit-navigator-56b2b",
-            storageBucket: "hit-navigator-56b2b.firebasestorage.app",
-            messagingSenderId: "744294498866",
-            appId: "1:744294498866:web:94aea9f4db7a998256722b"
-        };
+// FIREBASE
+import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
+const app = initializeApp({
+apiKey:"AIzaSy...",
+authDomain:"hit-navigator-56b2b.firebaseapp.com",
+projectId:"hit-navigator-56b2b"
+});
+const db = getFirestore(app);
 
-        const mapData = {
-            "entrance": { name: "Entrance", x: 0, z: 0 },
-            "s1": { name: "S1 Conference", x: 2.5, z: 9.8 },
-            "s2": { name: "S2 CS Lab", x: 2.5, z: 18.2 },
-            "s8": { name: "S8 IME 3", x: 2.5, z: 81.2 },
-            "library": { name: "Library Reserve", x: -2.5, z: 81.2 },
-            "s10a": { name: "Chairman Office", x: -2.5, z: 70.0 },
-            "s10b": { name: "E-Commerce Office", x: -2.5, z: 74.2 },
-            "s16": { name: "Director Tech Centre", x: -2.5, z: 9.8 },
-            "n1": { name: "N1 Hydraulic Lab", x: 2.5, z: -93.8 },
-            "n12": { name: "N12 Pneumatic Lab", x: 2.5, z: -46.2 }
-        };
+// =====================
+// 🔥 FULL MAP DATA
+// =====================
+const mapData = {
 
-        // VR Session Visibility Logic
-        const sceneEl = document.querySelector('a-scene');
-        const vrBuilding = document.getElementById('vr-building');
+"s1": { name:"S1 Conference Room", x:2.5, z:9.8 },
+"s2": { name:"S2 CS Lab", x:2.5, z:18.2 },
+"s3": { name:"S3 SME Lab 1", x:2.5, z:26.6 },
+"s4": { name:"S4 SME Lab 2", x:2.5, z:42.0 },
+"s5": { name:"S5 FPT 4", x:2.5, z:50.4 },
+"s6": { name:"S6 FE 4", x:2.5, z:58.8 },
+"s7": { name:"S7 CS 4", x:2.5, z:74.2 },
+"s8": { name:"S8 IME 3", x:2.5, z:81.2 },
 
-        sceneEl.addEventListener('enter-vr', () => {
-            vrBuilding.setAttribute('visible', 'true');
-            if(document.getElementById('arjs-video')) document.getElementById('arjs-video').style.display = 'none';
-        });
+"library": { name:"Library Reserve", x:-2.5, z:81.2 },
+"s10b": { name:"Electronic Commerce Office", x:-2.5, z:74.2 },
+"s10a": { name:"Chairman Office", x:-2.5, z:70.0 },
+"s13b": { name:"Chairman FE Office", x:-2.5, z:58.8 },
+"s14": { name:"TDC Office", x:-2.5, z:50.4 },
+"s15b": { name:"Chairman TDC", x:-2.5, z:42.0 },
+"s16": { name:"Director Tech Centre", x:-2.5, z:9.8 },
 
-        sceneEl.addEventListener('exit-vr', () => {
-            vrBuilding.setAttribute('visible', 'false');
-            if(document.getElementById('arjs-video')) document.getElementById('arjs-video').style.display = 'block';
-        });
+"n6": { name:"N6 Proposed Pharmacy", x:-2.5, z:-38.5 },
+"n7": { name:"N7 FPT Lab", x:-2.5, z:-46.2 },
+"n8": { name:"N8 FPT Lab 2", x:-2.5, z:-62.3 },
+"n9": { name:"N9 FE 1", x:-2.5, z:-70.0 },
 
-        const populateList = () => {
-            const sGroup = document.getElementById('s-group');
-            const nGroup = document.getElementById('n-group');
-            for (let id in mapData) {
-                if(id === "entrance") continue;
-                let opt = `<option value="${id}">${mapData[id].name}</option>`;
-                id.startsWith('n') ? nGroup.innerHTML += opt : sGroup.innerHTML += opt;
-            }
-        };
-        populateList();
+"n10": { name:"N10 Proposed Analytic Lab", x:2.5, z:-70.0 },
+"n11": { name:"N11 Pharmaceutical Lab", x:2.5, z:-62.3 },
+"n12": { name:"N12 Pneumatic Lab", x:2.5, z:-46.2 },
+"n2": { name:"N2 Bio Tech Lab", x:2.5, z:-86.1 },
+"n1": { name:"N1 Hydraulic Lab", x:2.5, z:-93.8 }
+};
 
-        const speak = (text) => {
-            window.speechSynthesis.cancel();
-            const utter = new SpeechSynthesisUtterance(text);
-            window.speechSynthesis.speak(utter);
-        };
+// =====================
+// 🎤 VOICE
+// =====================
+const synth = window.speechSynthesis;
+const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 
-        const startNav = async (endId) => {
-            const startId = document.getElementById('start-node').value;
-            const start = mapData[startId];
-            const end = mapData[endId];
-            if(!end) return;
+const speak = (text)=>{
+    const utter = new SpeechSynthesisUtterance(text);
+    synth.speak(utter);
+};
 
-            const xDiff = end.x - start.x;
-            const zDiff = end.z - start.z;
-            const steps = Math.abs(Math.round(zDiff / 0.7));
+// =====================
+// 📍 GPS + SMOOTHING
+// =====================
+const anchor = { lat:-17.8252, lng:31.0335 };
 
-            // Breadcrumb Dots
-            const dotContainer = document.getElementById('path-dots');
-            dotContainer.innerHTML = '';
-            for(let i=1; i<=7; i++) {
-                const ratio = i / 8;
-                const dot = document.createElement('a-sphere');
-                dot.setAttribute('position', `${start.x + (xDiff * ratio)} 0.1 ${start.z + (zDiff * ratio)}`);
-                dot.setAttribute('radius', '0.12');
-                dot.setAttribute('color', '#22d3ee');
-                dot.setAttribute('material', 'emissive: #22d3ee; opacity: 0.7');
-                dotContainer.appendChild(dot);
-            }
+let smoothX=0, smoothZ=0;
 
-            // Destination Marker
-            const marker = document.getElementById('destination-marker');
-            marker.setAttribute('position', `${end.x} 0 ${end.z}`);
-            marker.setAttribute('visible', 'true');
-            document.getElementById('marker-label').setAttribute('value', end.name.toUpperCase());
+navigator.geolocation.watchPosition(pos=>{
+    const scale=111139;
 
-            // Voice AI
-            let moveDir = zDiff > 0 ? "forward" : "straight back";
-            let turnDir = end.x > start.x ? "right" : "left";
-            const voiceMsg = `Walk ${steps} steps ${moveDir}. Target is on the ${turnDir}.`;
-            
-            document.getElementById('ai-status').innerText = voiceMsg;
-            speak(voiceMsg);
+    const rawX=(pos.coords.longitude-anchor.lng)*scale;
+    const rawZ=-(pos.coords.latitude-anchor.lat)*scale;
 
-            await addDoc(collection(db, "NavLogs"), { from: start.name, to: end.name, timestamp: serverTimestamp() });
-        };
+    smoothX += (rawX - smoothX)*0.1;
+    smoothZ += (rawZ - smoothZ)*0.1;
+});
 
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        document.getElementById('voice-trigger').onclick = () => recognition.start();
-        recognition.onresult = (e) => {
-            const transcript = e.results[0][0].transcript.toLowerCase();
-            for (let id in mapData) {
-                if(transcript.includes(mapData[id].name.toLowerCase()) || transcript.includes(id)) {
-                    document.getElementById('end-node').value = id;
-                    startNav(id);
-                    return;
-                }
-            }
-            speak("Destination not recognized.");
-        };
+// =====================
+// PATH GENERATOR
+// =====================
+function drawPath(x,z){
+    const pathEl=document.getElementById('path');
+    pathEl.innerHTML="";
 
-        document.getElementById('go-btn').onclick = () => {
-            const val = document.getElementById('end-node').value;
-            if(val) startNav(val);
-        };
-    </script>
+    for(let i=1;i<=12;i++){
+        const r=i/12;
+        const dot=document.createElement('a-sphere');
+        dot.setAttribute('radius','0.1');
+        dot.setAttribute('color','#22d3ee');
+        dot.setAttribute('position',`${x*r} 0 ${z*r}`);
+        pathEl.appendChild(dot);
+    }
+}
+
+// =====================
+// NAVIGATION CORE
+// =====================
+async function startNav(id){
+
+    const dest=mapData[id];
+    if(!dest) return;
+
+    const finalX=dest.x - smoothX;
+    const finalZ=dest.z - smoothZ;
+
+    // marker
+    marker.setAttribute('position',`${finalX} 0 ${finalZ}`);
+    marker.setAttribute('visible',true);
+
+    // label
+    label.setAttribute('value',dest.name);
+    label.setAttribute('position',`${finalX} 1.5 ${finalZ}`);
+    label.setAttribute('visible',true);
+
+    // path
+    drawPath(finalX, finalZ);
+
+    // arrow
+    const angle = Math.atan2(finalX, finalZ) * (180/Math.PI);
+    arrow.setAttribute('rotation',`0 ${angle} 0`);
+    arrow.setAttribute('position','0 0 -1');
+    arrow.setAttribute('visible',true);
+
+    const dist=Math.sqrt(finalX**2+finalZ**2).toFixed(1);
+
+    speak(`Head forward. ${dist} meters remaining`);
+
+    await addDoc(collection(db,"NavLogs"),{
+        destination:dest.name,
+        timestamp:serverTimestamp()
+    });
+}
+
+// =====================
+// UI
+// =====================
+const select=document.getElementById('end-node');
+
+for(let id in mapData){
+    const opt=document.createElement('option');
+    opt.value=id;
+    opt.textContent=mapData[id].name;
+    select.appendChild(opt);
+}
+
+go-btn.onclick=()=>{
+    if(select.value) startNav(select.value);
+};
+
+// voice trigger
+document.body.addEventListener("dblclick",()=>recognition.start());
+
+recognition.onresult=(e)=>{
+    const text=e.results[0][0].transcript.toLowerCase();
+    for(let id in mapData){
+        if(text.includes(id) || text.includes(mapData[id].name.toLowerCase())){
+            select.value=id;
+            startNav(id);
+            return;
+        }
+    }
+    speak("Location not found");
+};
+
+</script>
+
 </body>
 </html>
