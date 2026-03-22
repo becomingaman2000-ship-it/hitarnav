@@ -8,29 +8,46 @@
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
-body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:transparent;}
-#arjs-video{position:fixed;width:100%;height:100%;object-fit:cover;z-index:-1}
-
-/* VR BUTTON FIX */
-.a-enter-vr-button{
-    background:rgba(0,0,0,0.6)!important;
-    border-radius:12px!important;
-    right:15px!important;
+body,html{
+margin:0;padding:0;width:100%;height:100%;
+overflow:hidden;background:transparent;
 }
 
+/* FIX CAMERA */
+#arjs-video{
+position:fixed;
+top:0;left:0;
+width:100%;
+height:100%;
+object-fit:cover;
+z-index:-1;
+}
+
+/* REMOVE WHITE VR BLOCK BUT KEEP BUTTON */
+.a-enter-vr-button{
+background:rgba(0,0,0,0.6)!important;
+border-radius:12px!important;
+right:15px!important;
+}
+
+/* UI */
 .ui-layer{z-index:10;pointer-events:none}
 .interactive{pointer-events:auto}
 
 .ai-wave{
-    background:linear-gradient(90deg,#22d3ee,#0891b2,#22d3ee);
-    animation:wave 2s linear infinite;
+background:linear-gradient(90deg,#22d3ee,#0891b2,#22d3ee);
+animation:wave 2s linear infinite;
 }
-@keyframes wave{0%{background-position:0%}100%{background-position:200%}}
+@keyframes wave{
+0%{background-position:0%}
+100%{background-position:200%}
+}
 </style>
 </head>
 
 <body>
 
+<!-- UI -->
 <div class="ui-layer fixed inset-0 flex flex-col justify-end p-6">
 <div class="interactive">
 
@@ -43,13 +60,14 @@ Start Navigation
 </div>
 </div>
 
+<!-- AR SCENE -->
 <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: true">
 
 <!-- DESTINATION -->
 <a-sphere id="marker" radius="0.4" color="#22d3ee" visible="false"></a-sphere>
 <a-text id="label" align="center" color="#fff" visible="false"></a-text>
 
-<!-- DIRECTION -->
+<!-- DIRECTION ARROW -->
 <a-cone id="arrow" radius-bottom="0.2" height="0.6" color="#22d3ee" visible="false"></a-cone>
 
 <!-- PATH -->
@@ -61,7 +79,9 @@ Start Navigation
 
 <script type="module">
 
+// =====================
 // FIREBASE
+// =====================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -73,7 +93,7 @@ projectId:"hit-navigator-56b2b"
 const db = getFirestore(app);
 
 // =====================
-// 🔥 FULL MAP DATA
+// FULL MAP DATA
 // =====================
 const mapData = {
 
@@ -107,7 +127,7 @@ const mapData = {
 };
 
 // =====================
-// 🎤 VOICE
+// VOICE
 // =====================
 const synth = window.speechSynthesis;
 const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
@@ -118,7 +138,7 @@ const speak = (text)=>{
 };
 
 // =====================
-// 📍 GPS + SMOOTHING
+// GPS + INDOOR SMOOTHING
 // =====================
 const anchor = { lat:-17.8252, lng:31.0335 };
 
@@ -135,7 +155,7 @@ navigator.geolocation.watchPosition(pos=>{
 });
 
 // =====================
-// PATH GENERATOR
+// PATH
 // =====================
 function drawPath(x,z){
     const pathEl=document.getElementById('path');
@@ -152,7 +172,18 @@ function drawPath(x,z){
 }
 
 // =====================
-// NAVIGATION CORE
+// TURN INSTRUCTIONS
+// =====================
+function getTurnInstruction(x,z){
+    const angle = Math.atan2(x, z) * (180/Math.PI);
+
+    if(angle > 20) return "Turn right";
+    if(angle < -20) return "Turn left";
+    return "Go straight";
+}
+
+// =====================
+// NAVIGATION
 // =====================
 async function startNav(id){
 
@@ -161,6 +192,10 @@ async function startNav(id){
 
     const finalX=dest.x - smoothX;
     const finalZ=dest.z - smoothZ;
+
+    const marker=document.getElementById('marker');
+    const label=document.getElementById('label');
+    const arrow=document.getElementById('arrow');
 
     // marker
     marker.setAttribute('position',`${finalX} 0 ${finalZ}`);
@@ -174,18 +209,24 @@ async function startNav(id){
     // path
     drawPath(finalX, finalZ);
 
-    // arrow
+    // arrow direction
     const angle = Math.atan2(finalX, finalZ) * (180/Math.PI);
     arrow.setAttribute('rotation',`0 ${angle} 0`);
     arrow.setAttribute('position','0 0 -1');
     arrow.setAttribute('visible',true);
 
+    // distance
     const dist=Math.sqrt(finalX**2+finalZ**2).toFixed(1);
 
-    speak(`Head forward. ${dist} meters remaining`);
+    // 🔥 TURN LOGIC
+    const turn = getTurnInstruction(finalX, finalZ);
+    const instruction = `${turn} in ${dist} meters`;
+
+    speak(instruction);
 
     await addDoc(collection(db,"NavLogs"),{
         destination:dest.name,
+        instruction:instruction,
         timestamp:serverTimestamp()
     });
 }
@@ -202,7 +243,7 @@ for(let id in mapData){
     select.appendChild(opt);
 }
 
-go-btn.onclick=()=>{
+document.getElementById('go-btn').onclick=()=>{
     if(select.value) startNav(select.value);
 };
 
