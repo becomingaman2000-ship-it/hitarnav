@@ -1,280 +1,192 @@
 <!DOCTYPE html>
 <html>
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-
-<script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
-<script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
-<script src="https://cdn.tailwindcss.com"></script>
-
-<style>
-body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:transparent;}
-
-#arjs-video{
-position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-1;
-}
-
-.a-enter-vr-button{
-background:rgba(0,0,0,0.6)!important;border-radius:12px!important;right:15px!important;
-}
-
-.a-enter-vr-modal,.a-enter-vr-overlay{display:none !important;}
-
-.ui-layer{position:fixed;inset:0;z-index:10;pointer-events:none;}
-.interactive{pointer-events:auto;}
-
-.top-bar{
-position:absolute;top:0;left:0;right:0;padding:12px;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);color:white;
-}
-
-.bottom-bar{
-position:absolute;bottom:0;left:0;right:0;padding:16px;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);color:white;
-}
-
-.btn{padding:10px;border-radius:10px;background:#22d3ee;color:black;font-weight:bold;text-align:center;}
-.btn-danger{background:#ef4444;color:white;}
-.btn-dark{background:#111;color:white;border:1px solid #333;}
-
-.ai-wave{background:linear-gradient(90deg,#22d3ee,#0891b2,#22d3ee);animation:wave 2s linear infinite;}
-@keyframes wave{0%{background-position:0%}100%{background-position:200%}}
-
-#mapOverlay{
-position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;display:none;z-index:50;
-}
-
-#mapCanvas{width:100%;height:100%;}
-
-</style>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>HIT AR | Master Navigator Pro</title>
+    <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+    <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; font-family: 'Inter', sans-serif; }
+        #arjs-video { position: fixed !important; top: 0; left: 0; width: 100% !important; height: 100% !important; object-fit: cover !important; z-index: -1 !important; }
+        .ui-layer { z-index: 10; pointer-events: none; }
+        .interactive { pointer-events: auto; }
+        .ai-wave { background: linear-gradient(90deg, #22d3ee, #0891b2, #22d3ee); background-size: 200% 200%; animation: wave 2s linear infinite; }
+        @keyframes wave { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
+        .glowing-btn { box-shadow: 0 0 30px rgba(34, 211, 238, 0.5); }
+        #map-overlay { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(120%); }
+        #map-overlay.active { transform: translateY(0); }
+    </style>
 </head>
-
 <body>
 
-<div class="ui-layer">
+    <div id="map-overlay" class="fixed inset-x-0 bottom-0 z-[100] p-4 interactive">
+        <div class="bg-slate-900/95 backdrop-blur-2xl border-t-2 border-cyan-500 rounded-t-[3rem] p-6 shadow-2xl">
+            <div class="flex justify-between items-center mb-6">
+                <div class="flex items-center gap-2">
+                    <div class="w-2 h-2 bg-cyan-500 rounded-full animate-ping"></div>
+                    <h3 class="text-white font-black text-xs uppercase tracking-[0.2em]">Floor 0: Master Blueprint</h3>
+                </div>
+                <button onclick="document.getElementById('map-overlay').classList.remove('active')" class="bg-white/10 text-white w-8 h-8 rounded-full flex items-center justify-center font-bold">✕</button>
+            </div>
+            <img src="blueprint.jpeg" class="w-full rounded-[2rem] border border-white/10 mb-4 shadow-inner" alt="Campus Map">
+        </div>
+    </div>
 
-<div class="top-bar interactive flex justify-between items-center">
-<button id="back-btn" class="btn btn-danger">Back</button>
+    <div class="ui-layer fixed inset-0 flex flex-col justify-between p-6">
+        <div class="flex justify-between items-center interactive">
+            <button onclick="location.href='dashboard.html'" class="bg-black/60 backdrop-blur-md text-white px-5 py-3 rounded-2xl font-black text-[10px] uppercase border border-white/10 flex items-center gap-2">
+                <span class="text-lg">←</span> Back
+            </button>
+            <button onclick="document.getElementById('map-overlay').classList.add('active')" class="bg-white/10 backdrop-blur-md text-white px-5 py-3 rounded-2xl font-black text-[10px] uppercase border border-white/10">
+                🗺 Explore Map
+            </button>
+        </div>
 
-<div class="text-sm text-center flex-1 px-2">
-<div><b>From:</b> <span id="current-location">Detecting...</span></div>
-<div><b>To:</b> <span id="destination-name">Not selected</span></div>
-</div>
+        <div class="space-y-4 interactive">
+            <div class="bg-black/50 backdrop-blur-2xl p-2 rounded-[2.5rem] border border-white/10 shadow-2xl">
+                <div class="flex flex-col gap-1 p-2">
+                    <select id="end-node" class="bg-slate-800/80 text-white text-[11px] p-3 rounded-2xl outline-none border border-white/5 font-bold">
+                        <option value="">Where are we going today?</option>
+                        <optgroup label="S-BLOCK (West Side)">
+                            <option value="library">Library Reserve</option>
+                            <option value="s10b">E-Commerce Office</option>
+                            <option value="s10a">Chairman Office</option>
+                            <option value="s16">Director Tech Centre</option>
+                        </optgroup>
+                        <optgroup label="S-BLOCK (East Side)">
+                            <option value="s1">S1 Conference Room</option>
+                            <option value="s2">S2 CS Lab</option>
+                            <option value="s8">S8 IME 3</option>
+                        </optgroup>
+                        <optgroup label="N-BLOCK">
+                            <option value="n4">N4 CS 1</option>
+                            <option value="n12">N12 Pneumatic Lab</option>
+                            <option value="n1">N1 Hydraulic Lab</option>
+                        </optgroup>
+                    </select>
+                    <button id="go-btn" class="ai-wave text-white py-3 mt-1 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg">Activate AR Path</button>
+                </div>
+            </div>
 
-<div class="flex gap-2">
-<button id="voice-btn" class="btn">🎤</button>
-<button id="map-btn" class="btn btn-dark">🗺️</button>
-</div>
-</div>
+            <div class="flex flex-col items-center pb-6">
+                <div id="voice-trigger" class="glowing-btn w-16 h-16 bg-cyan-500 rounded-full flex items-center justify-center text-2xl shadow-2xl cursor-pointer active:scale-90 transition-transform">
+                    🎙️
+                </div>
+                <div class="mt-4 bg-black/60 backdrop-blur-lg border border-white/10 px-6 py-2 rounded-full text-center max-w-[280px]">
+                    <p id="ai-text" class="text-cyan-400 text-[9px] font-black uppercase tracking-tighter">AI Assistant Standing By</p>
+                    <p id="ai-status" class="text-white/60 text-[8px] font-medium mt-1">Try "Take me to the Library"</p>
+                </div>
+            </div>
+        </div>
+    </div>
 
-<div class="bottom-bar interactive">
-<select id="end-node" class="w-full p-2 rounded bg-black text-white mb-2"></select>
-<button id="go-btn" class="btn w-full ai-wave">Start Navigation</button>
-</div>
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
+        <a-sphere id="nav-marker" radius="0.5" color="#22d3ee" visible="false" 
+                  animation="property: position; to: 0 1.2 0; dir: alternate; dur: 1000; loop: true"
+                  material="emissive: #22d3ee; emissiveIntensity: 2; opacity: 0.9; transparent: true">
+        </a-sphere>
+        <a-text id="marker-label" value="" align="center" position="0 2.2 0" scale="2.5 2.5 2.5" font="exo2bold" color="#ffffff" visible="false"></a-text>
+        <a-entity camera></a-entity>
+    </a-scene>
 
-</div>
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-<div id="mapOverlay">
-<button id="close-map" class="btn btn-danger" style="position:absolute;top:20px;right:20px;z-index:60;">Close</button>
-<canvas id="mapCanvas"></canvas>
-</div>
+        const firebaseConfig = {
+            apiKey: "AIzaSyCcendyEqvaAw7ldnFOSwDEfQb74L_wfmw",
+            authDomain: "hit-navigator-56b2b.firebaseapp.com",
+            projectId: "hit-navigator-56b2b",
+            storageBucket: "hit-navigator-56b2b.firebasestorage.app",
+            messagingSenderId: "744294498866",
+            appId: "1:744294498866:web:94aea9f4db7a998256722b"
+        };
 
-<a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: true">
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-<a-sphere id="marker" radius="0.06" color="#22d3ee" visible="false"></a-sphere>
-<a-text id="label" align="center" color="#fff" visible="false"></a-text>
-<a-cone id="arrow" radius-bottom="0.02" height="0.06" color="#22d3ee" visible="false"></a-cone>
-<a-entity id="path"></a-entity>
-<a-entity camera></a-entity>
+        // --- STEP-CALIBRATED MESH DATA ---
+        // 1 step = 0.7m. Z-axis: S-Block is +, N-Block is -. X-axis: East side is +, West side is -.
+        const mapData = {
+            // S-BLOCK EAST SIDE (Right)
+            "s1": { name: "S1 Conference Room", x: 2.5, z: 9.8 },
+            "s2": { name: "S2 CS Lab", x: 2.5, z: 18.2 },
+            "s3": { name: "S3 SME Lab 1", x: 2.5, z: 26.6 },
+            "s4": { name: "S4 SME Lab 2", x: 2.5, z: 42.0 },
+            "s5": { name: "S5 FPT 4", x: 2.5, z: 50.4 },
+            "s6": { name: "S6 FE 4", x: 2.5, z: 58.8 },
+            "s7": { name: "S7 CS 4", x: 2.5, z: 74.2 },
+            "s8": { name: "S8 IME 3", x: 2.5, z: 81.2 },
 
-</a-scene>
+            // S-BLOCK WEST SIDE (Left - Mirrored)
+            "library": { name: "Library Reserve", x: -2.5, z: 81.2 },
+            "s10b": { name: "Electronic Commerce Office", x: -2.5, z: 74.2 },
+            "s10a": { name: "Chairman Office", x: -2.5, z: 70.0 }, // Estimated door position
+            "s13b": { name: "Chairman FE Office", x: -2.5, z: 58.8 },
+            "s14": { name: "TDC Office", x: -2.5, z: 50.4 },
+            "s15b": { name: "Chairman TDC", x: -2.5, z: 42.0 },
+            "s16": { name: "Director Tech Centre", x: -2.5, z: 9.8 },
 
-<script type="module">
+            // N-BLOCK WEST SIDE (Left)
+            "n6": { name: "N6 Proposed Pharmacy", x: -2.5, z: -38.5 }, // 33 + 22 steps from S-passage
+            "n7": { name: "N7 FPT Lab", x: -2.5, z: -46.2 },
+            "n8": { name: "N8 FPT Lab 2", x: -2.5, z: -62.3 },
+            "n9": { name: "N9 FE 1", x: -2.5, z: -70.0 },
 
-// MAP DATA (20+ ROOMS)
-const mapData = {
-"s1": { name:"S1 Conference Room", x:2.5, z:9.8 },
-"s2": { name:"S2 CS Lab", x:2.5, z:18.2 },
-"s3": { name:"S3 SME Lab 1", x:2.5, z:26.6 },
-"s4": { name:"S4 SME Lab 2", x:2.5, z:42.0 },
-"s5": { name:"S5 FPT 4", x:2.5, z:50.4 },
-"s6": { name:"S6 FE 4", x:2.5, z:58.8 },
-"s7": { name:"S7 CS 4", x:2.5, z:74.2 },
-"s8": { name:"S8 IME 3", x:2.5, z:81.2 },
-"library": { name:"Library Reserve", x:-2.5, z:81.2 },
-"s10a": { name:"Chairman Office", x:-2.5, z:70.0 },
-"s10b": { name:"Electronic Commerce Office", x:-2.5, z:74.2 },
-"s13b": { name:"Chairman FE Office", x:-2.5, z:58.8 },
-"s14": { name:"TDC Office", x:-2.5, z:50.4 },
-"s15b": { name:"Chairman TDC", x:-2.5, z:42.0 },
-"s16": { name:"Director Tech Centre", x:-2.5, z:9.8 },
-"n6": { name:"N6 Pharmacy", x:-2.5, z:-38.5 },
-"n7": { name:"N7 FPT Lab", x:-2.5, z:-46.2 },
-"n8": { name:"N8 FPT Lab 2", x:-2.5, z:-62.3 },
-"n9": { name:"N9 FE 1", x:-2.5, z:-70.0 },
-"n10": { name:"N10 Analytic Lab", x:2.5, z:-70.0 },
-"n11": { name:"N11 Pharmaceutical Lab", x:2.5, z:-62.3 },
-"n12": { name:"N12 Pneumatic Lab", x:2.5, z:-46.2 },
-"n2": { name:"N2 Bio Tech Lab", x:2.5, z:-86.1 },
-"n1": { name:"N1 Hydraulic Lab", x:2.5, z:-93.8 }
-};
+            // N-BLOCK EAST SIDE (Right - Mirrored)
+            "n10": { name: "N10 Proposed Analytic Lab", x: 2.5, z: -70.0 },
+            "n11": { name: "N11 Pharmaceutical Lab", x: 2.5, z: -62.3 },
+            "n12": { name: "N12 Pneumatic Lab", x: 2.5, z: -46.2 },
+            "n2": { name: "N2 Bio Tech Lab", x: 2.5, z: -86.1 },
+            "n1": { name: "N1 Hydraulic Lab", x: 2.5, z: -93.8 }
+        };
 
-const synth = window.speechSynthesis;
-const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        const synth = window.speechSynthesis;
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 
-function speak(t){synth.speak(new SpeechSynthesisUtterance(t));}
+        const speak = (text) => {
+            const utter = new SpeechSynthesisUtterance(text);
+            utter.rate = 1.0;
+            synth.speak(utter);
+        };
 
-const anchor = { lat:-17.8252, lng:31.0335 };
-let smoothX=0, smoothZ=0;
-let lastHeading=0;
+        const startNav = async (id) => {
+            const dest = mapData[id];
+            if(!dest) return;
 
-let navigationActive=false;
-let destinationId=null;
-let currentRoute=[];
-let currentIndex=0;
+            const marker = document.getElementById('nav-marker');
+            const label = document.getElementById('marker-label');
 
-// MAP UI
-const mapOverlay=document.getElementById("mapOverlay");
-const canvas=document.getElementById("mapCanvas");
-const ctx=canvas.getContext("2d");
+            marker.setAttribute('position', `${dest.x} 0.5 ${dest.z}`);
+            label.setAttribute('position', `${dest.x} 2.2 ${dest.z}`);
+            marker.setAttribute('visible', 'true');
+            label.setAttribute('visible', 'true');
+            label.setAttribute('value', dest.name.toUpperCase());
 
-function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+            const dist = Math.sqrt(dest.x**2 + dest.z**2).toFixed(1);
+            speak(`Navigating to ${dest.name}. It is about ${dist} meters away. Follow the blue indicator.`);
 
-// UI BUTTONS
-document.getElementById("map-btn").onclick=()=>{mapOverlay.style.display="block";resizeCanvas();};
-document.getElementById("close-map").onclick=()=>{mapOverlay.style.display="none";};
+            await addDoc(collection(db, "NavLogs"), { destination: dest.name, timestamp: serverTimestamp() });
+        };
 
-// GPS
-navigator.geolocation.watchPosition(pos=>{
-const scale=111139;
-const rawX=(pos.coords.longitude-anchor.lng)*scale;
-const rawZ=-(pos.coords.latitude-anchor.lat)*scale;
+        document.getElementById('voice-trigger').onclick = () => { recognition.start(); };
+        recognition.onresult = (e) => {
+            const transcript = e.results[0][0].transcript.toLowerCase();
+            for (let id in mapData) {
+                if(transcript.includes(id) || transcript.includes(mapData[id].name.toLowerCase())) {
+                    document.getElementById('end-node').value = id;
+                    startNav(id);
+                    return;
+                }
+            }
+            speak("Room not recognized. Please try the room code.");
+        };
 
-const prevX=smoothX;
-const prevZ=smoothZ;
-
-smoothX+=(rawX-smoothX)*0.12;
-smoothZ+=(rawZ-smoothZ)*0.12;
-
-const dx=smoothX-prevX;
-const dz=smoothZ-prevZ;
-if(Math.abs(dx)>0.01||Math.abs(dz)>0.01){lastHeading=Math.atan2(dx,dz);}
-
-if(navigationActive){updateNavigation();updateMap();}
-
-});
-
-function drawPath(x,z){
-const path=document.getElementById("path");
-path.innerHTML="";
-for(let i=1;i<=12;i++){
-const r=i/12;
-const dot=document.createElement("a-sphere");
-dot.setAttribute("radius","0.1");
-dot.setAttribute("color","#22d3ee");
-dot.setAttribute("position",`${x*r} 0 ${z*r}`);
-path.appendChild(dot);
-}
-}
-
-function getTurnInstruction(x,z){
-const angle=Math.atan2(x,z)*(180/Math.PI);
-if(angle>20) return "Turn right";
-if(angle<-20) return "Turn left";
-return "Go straight";
-}
-
-function startNav(id){
-destinationId=id;
-document.getElementById("destination-name").innerText=mapData[id].name;
-currentRoute=[{...mapData["s1"]},mapData[id]];
-currentIndex=0;
-navigationActive=true;
-updateNavigation();
-}
-
-function updateNavigation(){
-if(currentIndex>=currentRoute.length-1){speak("You have arrived");navigationActive=false;return;}
-
-const start=currentRoute[currentIndex];
-const end=currentRoute[currentIndex+1];
-
-const dx=end.x-smoothX;
-const dz=end.z-smoothZ;
-
-const marker=document.getElementById("marker");
-const label=document.getElementById("label");
-const arrow=document.getElementById("arrow");
-
-marker.setAttribute("position",`${dx} 0 ${dz}`);
-marker.setAttribute("visible",true);
-label.setAttribute("position",`${dx} 1.5 ${dz}`);
-label.setAttribute("visible",true);
-arrow.setAttribute("rotation",`0 ${Math.atan2(dx,dz)*(180/Math.PI)} 0`);
-arrow.setAttribute("visible",true);
-
-drawPath(dx,dz);
-
-const dist=Math.sqrt(Math.pow(end.x-smoothX,2)+Math.pow(end.z-smoothZ,2));
-const stepDist=Math.sqrt(Math.pow(end.x-start.x,2)+Math.pow(end.z-start.z,2)).toFixed(1);
-const turn=getTurnInstruction(end.x-start.x,end.z-start.z);
-
-if(dist<6 && !window._spoken){speak(turn+" and walk "+stepDist+" meters");window._spoken=true;}
-if(dist>8){window._spoken=false;}
-if(dist<3){currentIndex++;window._spoken=false;updateNavigation();}
-}
-
-// 2D MAP
-function updateMap(){
-if(mapOverlay.style.display!=="block") return;
-ctx.clearRect(0,0,canvas.width,canvas.height);
-const scale=2;
-
-if(destinationId){
-const d=mapData[destinationId];
-ctx.fillStyle="red";
-ctx.beginPath();
-ctx.arc(canvas.width/2+d.x*scale,canvas.height/2+d.z*scale,8,0,Math.PI*2);
-ctx.fill();
-}
-
-ctx.save();
-ctx.translate(canvas.width/2+smoothX*scale,canvas.height/2+smoothZ*scale);
-ctx.rotate(lastHeading);
-ctx.fillStyle="lime";
-ctx.beginPath();
-ctx.moveTo(0,-10);
-ctx.lineTo(6,10);
-ctx.lineTo(-6,10);
-ctx.closePath();
-ctx.fill();
-ctx.restore();
-}
-
-// UI POPULATE
-const select=document.getElementById("end-node");
-for(let id in mapData){
-const opt=document.createElement("option");
-opt.value=id;
-opt.textContent=mapData[id].name;
-select.appendChild(opt);
-}
-
-document.getElementById("go-btn").onclick=()=>{if(select.value)startNav(select.value);};
-
-document.getElementById("back-btn").onclick=()=>{navigationActive=false;speak("Navigation stopped");};
-
-document.getElementById("voice-btn").onclick=()=>recognition.start();
-
-recognition.onresult=(e)=>{
-const text=e.results[0][0].transcript.toLowerCase();
-for(let id in mapData){
-if(text.includes(id)||text.includes(mapData[id].name.toLowerCase())){
-select.value=id;startNav(id);return;
-}
-}
-speak("Location not found");
-};
-
-</script>
-
+        document.getElementById('go-btn').onclick = () => {
+            const val = document.getElementById('end-node').value;
+            if(val) startNav(val);
+        };
+    </script>
 </body>
 </html>
