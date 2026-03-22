@@ -8,112 +8,50 @@
 <script src="https://cdn.tailwindcss.com"></script>
 
 <style>
-body,html{
-margin:0;padding:0;width:100%;height:100%;
-overflow:hidden;background:transparent;
-}
+body,html{margin:0;padding:0;width:100%;height:100%;overflow:hidden;background:transparent;}
 
-/* CAMERA */
 #arjs-video{
-position:fixed;
-top:0;left:0;
-width:100%;
-height:100%;
-object-fit:cover;
-z-index:-1;
+position:fixed;top:0;left:0;width:100%;height:100%;object-fit:cover;z-index:-1;
 }
 
-/* VR BUTTON ONLY */
 .a-enter-vr-button{
-background:rgba(0,0,0,0.6)!important;
-border-radius:12px!important;
-right:15px!important;
+background:rgba(0,0,0,0.6)!important;border-radius:12px!important;right:15px!important;
 }
 
-/* REMOVE WHITE VR PANEL */
-.a-enter-vr-modal,
-.a-enter-vr-overlay{
-display:none !important;
-}
+.a-enter-vr-modal,.a-enter-vr-overlay{display:none !important;}
 
-/* UI LAYER */
-.ui-layer{
-position:fixed;
-inset:0;
-z-index:10;
-pointer-events:none;
-}
+.ui-layer{position:fixed;inset:0;z-index:10;pointer-events:none;}
+.interactive{pointer-events:auto;}
 
-.interactive{
-pointer-events:auto;
-}
-
-/* TOP PANEL */
 .top-bar{
-position:absolute;
-top:0;
-left:0;
-right:0;
-padding:12px;
-background:rgba(0,0,0,0.6);
-backdrop-filter:blur(10px);
-color:white;
+position:absolute;top:0;left:0;right:0;padding:12px;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);color:white;
 }
 
-/* BOTTOM PANEL */
 .bottom-bar{
-position:absolute;
-bottom:0;
-left:0;
-right:0;
-padding:16px;
-background:rgba(0,0,0,0.6);
-backdrop-filter:blur(10px);
-color:white;
+position:absolute;bottom:0;left:0;right:0;padding:16px;background:rgba(0,0,0,0.6);backdrop-filter:blur(10px);color:white;
 }
 
-/* BUTTONS */
-.btn{
-padding:10px;
-border-radius:10px;
-background:#22d3ee;
-color:black;
-font-weight:bold;
-text-align:center;
+.btn{padding:10px;border-radius:10px;background:#22d3ee;color:black;font-weight:bold;text-align:center;}
+.btn-danger{background:#ef4444;color:white;}
+.btn-dark{background:#111;color:white;border:1px solid #333;}
+
+.ai-wave{background:linear-gradient(90deg,#22d3ee,#0891b2,#22d3ee);animation:wave 2s linear infinite;}
+@keyframes wave{0%{background-position:0%}100%{background-position:200%}}
+
+#mapOverlay{
+position:fixed;top:0;left:0;width:100%;height:100%;background:#0a0a0a;display:none;z-index:50;
 }
 
-.btn-danger{
-background:#ef4444;
-color:white;
-}
-
-.btn-dark{
-background:#111;
-color:white;
-border:1px solid #333;
-}
-
-.ai-wave{
-background:linear-gradient(90deg,#22d3ee,#0891b2,#22d3ee);
-animation:wave 2s linear infinite;
-}
-@keyframes wave{
-0%{background-position:0%}
-100%{background-position:200%}
-}
+#mapCanvas{width:100%;height:100%;}
 
 </style>
 </head>
 
 <body>
 
-<!-- UI -->
 <div class="ui-layer">
 
-<!-- TOP PANEL -->
-<div class="top-bar interactive">
-<div class="flex justify-between items-center">
-
+<div class="top-bar interactive flex justify-between items-center">
 <button id="back-btn" class="btn btn-danger">Back</button>
 
 <div class="text-sm text-center flex-1 px-2">
@@ -121,91 +59,109 @@ animation:wave 2s linear infinite;
 <div><b>To:</b> <span id="destination-name">Not selected</span></div>
 </div>
 
+<div class="flex gap-2">
 <button id="voice-btn" class="btn">🎤</button>
-
+<button id="map-btn" class="btn btn-dark">🗺️</button>
 </div>
 </div>
 
-<!-- BOTTOM PANEL -->
 <div class="bottom-bar interactive">
-
 <select id="end-node" class="w-full p-2 rounded bg-black text-white mb-2"></select>
-
-<button id="go-btn" class="btn w-full mb-2 ai-wave">
-Start Navigation
-</button>
-
+<button id="go-btn" class="btn w-full ai-wave">Start Navigation</button>
 </div>
 
 </div>
 
-<!-- AR SCENE -->
+<div id="mapOverlay">
+<button id="close-map" class="btn btn-danger" style="position:absolute;top:20px;right:20px;z-index:60;">Close</button>
+<canvas id="mapCanvas"></canvas>
+</div>
+
 <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: true">
 
-<a-sphere id="marker" radius="0.4" color="#22d3ee" visible="false"></a-sphere>
+<a-sphere id="marker" radius="0.06" color="#22d3ee" visible="false"></a-sphere>
 <a-text id="label" align="center" color="#fff" visible="false"></a-text>
-
-<a-cone id="arrow" radius-bottom="0.2" height="0.6" color="#22d3ee" visible="false"></a-cone>
-
+<a-cone id="arrow" radius-bottom="0.02" height="0.06" color="#22d3ee" visible="false"></a-cone>
 <a-entity id="path"></a-entity>
-
 <a-entity camera></a-entity>
 
 </a-scene>
 
 <script type="module">
 
-import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-
-const app = initializeApp({
-apiKey:"AIzaSy...",
-authDomain:"hit-navigator-56b2b.firebaseapp.com",
-projectId:"hit-navigator-56b2b"
-});
-const db = getFirestore(app);
-
-// MAP
+// MAP DATA (20+ ROOMS)
 const mapData = {
 "s1": { name:"S1 Conference Room", x:2.5, z:9.8 },
 "s2": { name:"S2 CS Lab", x:2.5, z:18.2 },
+"s3": { name:"S3 SME Lab 1", x:2.5, z:26.6 },
+"s4": { name:"S4 SME Lab 2", x:2.5, z:42.0 },
+"s5": { name:"S5 FPT 4", x:2.5, z:50.4 },
+"s6": { name:"S6 FE 4", x:2.5, z:58.8 },
+"s7": { name:"S7 CS 4", x:2.5, z:74.2 },
 "s8": { name:"S8 IME 3", x:2.5, z:81.2 },
 "library": { name:"Library Reserve", x:-2.5, z:81.2 },
+"s10a": { name:"Chairman Office", x:-2.5, z:70.0 },
+"s10b": { name:"Electronic Commerce Office", x:-2.5, z:74.2 },
+"s13b": { name:"Chairman FE Office", x:-2.5, z:58.8 },
+"s14": { name:"TDC Office", x:-2.5, z:50.4 },
+"s15b": { name:"Chairman TDC", x:-2.5, z:42.0 },
+"s16": { name:"Director Tech Centre", x:-2.5, z:9.8 },
+"n6": { name:"N6 Pharmacy", x:-2.5, z:-38.5 },
+"n7": { name:"N7 FPT Lab", x:-2.5, z:-46.2 },
+"n8": { name:"N8 FPT Lab 2", x:-2.5, z:-62.3 },
+"n9": { name:"N9 FE 1", x:-2.5, z:-70.0 },
+"n10": { name:"N10 Analytic Lab", x:2.5, z:-70.0 },
+"n11": { name:"N11 Pharmaceutical Lab", x:2.5, z:-62.3 },
+"n12": { name:"N12 Pneumatic Lab", x:2.5, z:-46.2 },
+"n2": { name:"N2 Bio Tech Lab", x:2.5, z:-86.1 },
 "n1": { name:"N1 Hydraulic Lab", x:2.5, z:-93.8 }
 };
 
-// VOICE
 const synth = window.speechSynthesis;
 const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 
-function speak(text){
-synth.speak(new SpeechSynthesisUtterance(text));
-}
+function speak(t){synth.speak(new SpeechSynthesisUtterance(t));}
+
+const anchor = { lat:-17.8252, lng:31.0335 };
+let smoothX=0, smoothZ=0;
+let lastHeading=0;
+
+let navigationActive=false;
+let destinationId=null;
+let currentRoute=[];
+let currentIndex=0;
+
+// MAP UI
+const mapOverlay=document.getElementById("mapOverlay");
+const canvas=document.getElementById("mapCanvas");
+const ctx=canvas.getContext("2d");
+
+function resizeCanvas(){canvas.width=window.innerWidth;canvas.height=window.innerHeight;}
+
+// UI BUTTONS
+document.getElementById("map-btn").onclick=()=>{mapOverlay.style.display="block";resizeCanvas();};
+document.getElementById("close-map").onclick=()=>{mapOverlay.style.display="none";};
 
 // GPS
-const anchor = { lat:-17.8252, lng:31.0335 };
-
-let smoothX=0, smoothZ=0;
-
 navigator.geolocation.watchPosition(pos=>{
 const scale=111139;
-
 const rawX=(pos.coords.longitude-anchor.lng)*scale;
 const rawZ=-(pos.coords.latitude-anchor.lat)*scale;
+
+const prevX=smoothX;
+const prevZ=smoothZ;
 
 smoothX+=(rawX-smoothX)*0.12;
 smoothZ+=(rawZ-smoothZ)*0.12;
 
-document.getElementById("current-location").innerText =
-smoothX.toFixed(1)+", "+smoothZ.toFixed(1);
+const dx=smoothX-prevX;
+const dz=smoothZ-prevZ;
+if(Math.abs(dx)>0.01||Math.abs(dz)>0.01){lastHeading=Math.atan2(dx,dz);}
 
-if(navigationActive){
-updateNavigation();
-}
+if(navigationActive){updateNavigation();updateMap();}
 
 });
 
-// PATH
 function drawPath(x,z){
 const path=document.getElementById("path");
 path.innerHTML="";
@@ -219,7 +175,6 @@ path.appendChild(dot);
 }
 }
 
-// TURN
 function getTurnInstruction(x,z){
 const angle=Math.atan2(x,z)*(180/Math.PI);
 if(angle>20) return "Turn right";
@@ -227,39 +182,23 @@ if(angle<-20) return "Turn left";
 return "Go straight";
 }
 
-// NAV STATE
-let currentRoute=[];
-let currentIndex=0;
-let navigationActive=false;
-let destinationId=null;
-
-// START NAV
 function startNav(id){
-
 destinationId=id;
-document.getElementById("destination-name").innerText = mapData[id].name;
-
-currentRoute=[{...mapData["s1"]}, mapData[id]];
+document.getElementById("destination-name").innerText=mapData[id].name;
+currentRoute=[{...mapData["s1"]},mapData[id]];
 currentIndex=0;
 navigationActive=true;
-
 updateNavigation();
 }
 
-// UPDATE NAV
 function updateNavigation(){
-
-if(currentIndex >= currentRoute.length-1){
-speak("You have arrived");
-navigationActive=false;
-return;
-}
+if(currentIndex>=currentRoute.length-1){speak("You have arrived");navigationActive=false;return;}
 
 const start=currentRoute[currentIndex];
 const end=currentRoute[currentIndex+1];
 
-const dx=end.x - smoothX;
-const dz=end.z - smoothZ;
+const dx=end.x-smoothX;
+const dz=end.z-smoothZ;
 
 const marker=document.getElementById("marker");
 const label=document.getElementById("label");
@@ -267,50 +206,51 @@ const arrow=document.getElementById("arrow");
 
 marker.setAttribute("position",`${dx} 0 ${dz}`);
 marker.setAttribute("visible",true);
-
-label.setAttribute("value","Navigating");
 label.setAttribute("position",`${dx} 1.5 ${dz}`);
 label.setAttribute("visible",true);
-
-const angle=Math.atan2(dx,dz)*(180/Math.PI);
-arrow.setAttribute("rotation",`0 ${angle} 0`);
-arrow.setAttribute("position","0 0 -1");
+arrow.setAttribute("rotation",`0 ${Math.atan2(dx,dz)*(180/Math.PI)} 0`);
 arrow.setAttribute("visible",true);
 
 drawPath(dx,dz);
 
-const dist=Math.sqrt(
-Math.pow(end.x - smoothX,2)+
-Math.pow(end.z - smoothZ,2)
-);
+const dist=Math.sqrt(Math.pow(end.x-smoothX,2)+Math.pow(end.z-smoothZ,2));
+const stepDist=Math.sqrt(Math.pow(end.x-start.x,2)+Math.pow(end.z-start.z,2)).toFixed(1);
+const turn=getTurnInstruction(end.x-start.x,end.z-start.z);
 
-const stepDist=Math.sqrt(
-Math.pow(end.x - start.x,2)+
-Math.pow(end.z - start.z,2)
-).toFixed(1);
-
-const turn=getTurnInstruction(end.x - start.x, end.z - start.z);
-
-if(dist < 6 && !window._spoken){
-speak(`${turn} and walk ${stepDist} meters`);
-window._spoken=true;
+if(dist<6 && !window._spoken){speak(turn+" and walk "+stepDist+" meters");window._spoken=true;}
+if(dist>8){window._spoken=false;}
+if(dist<3){currentIndex++;window._spoken=false;updateNavigation();}
 }
 
-if(dist > 8){
-window._spoken=false;
+// 2D MAP
+function updateMap(){
+if(mapOverlay.style.display!=="block") return;
+ctx.clearRect(0,0,canvas.width,canvas.height);
+const scale=2;
+
+if(destinationId){
+const d=mapData[destinationId];
+ctx.fillStyle="red";
+ctx.beginPath();
+ctx.arc(canvas.width/2+d.x*scale,canvas.height/2+d.z*scale,8,0,Math.PI*2);
+ctx.fill();
 }
 
-if(dist < 3){
-currentIndex++;
-window._spoken=false;
-updateNavigation();
+ctx.save();
+ctx.translate(canvas.width/2+smoothX*scale,canvas.height/2+smoothZ*scale);
+ctx.rotate(lastHeading);
+ctx.fillStyle="lime";
+ctx.beginPath();
+ctx.moveTo(0,-10);
+ctx.lineTo(6,10);
+ctx.lineTo(-6,10);
+ctx.closePath();
+ctx.fill();
+ctx.restore();
 }
 
-}
-
-// UI
+// UI POPULATE
 const select=document.getElementById("end-node");
-
 for(let id in mapData){
 const opt=document.createElement("option");
 opt.value=id;
@@ -318,36 +258,19 @@ opt.textContent=mapData[id].name;
 select.appendChild(opt);
 }
 
-document.getElementById("go-btn").onclick=()=>{
-if(select.value) startNav(select.value);
-};
+document.getElementById("go-btn").onclick=()=>{if(select.value)startNav(select.value);};
 
-document.getElementById("back-btn").onclick=()=>{
-navigationActive=false;
-currentIndex=0;
+document.getElementById("back-btn").onclick=()=>{navigationActive=false;speak("Navigation stopped");};
 
-document.getElementById("marker").setAttribute("visible",false);
-document.getElementById("label").setAttribute("visible",false);
-document.getElementById("arrow").setAttribute("visible",false);
-
-speak("Navigation stopped");
-};
-
-document.getElementById("voice-btn").onclick=()=>{
-recognition.start();
-};
+document.getElementById("voice-btn").onclick=()=>recognition.start();
 
 recognition.onresult=(e)=>{
 const text=e.results[0][0].transcript.toLowerCase();
-
 for(let id in mapData){
-if(text.includes(id) || text.includes(mapData[id].name.toLowerCase())){
-select.value=id;
-startNav(id);
-return;
+if(text.includes(id)||text.includes(mapData[id].name.toLowerCase())){
+select.value=id;startNav(id);return;
 }
 }
-
 speak("Location not found");
 };
 
