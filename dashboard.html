@@ -86,7 +86,7 @@
                                     <tr class="text-slate-400 border-b border-slate-100 uppercase font-black tracking-widest"><th class="pb-3 px-2">Student ID</th><th class="pb-3">To Room</th><th class="pb-3 text-right">Time Accessed</th></tr>
                                 </thead>
                                 <tbody id="traffic-body" class="divide-y divide-slate-50">
-                                    </tbody>
+                                </tbody>
                             </table>
                         </div>
                     </div>
@@ -100,14 +100,37 @@
                         </div>
                     </div>
                 </div>
-            </div>
 
+                <div id="master-db-panel" class="bg-white p-8 rounded-[2rem] shadow-sm border border-slate-200">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h3 class="font-black text-slate-800 text-lg uppercase tracking-tighter">Master User Database</h3>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Audit Logs: User Details & Navigation History</p>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-left text-xs">
+                            <thead>
+                                <tr class="text-slate-400 border-b border-slate-100 uppercase font-black tracking-widest">
+                                    <th class="pb-4 px-2">User Email / ID</th>
+                                    <th class="pb-4">Account Type</th>
+                                    <th class="pb-4">Destination</th>
+                                    <th class="pb-4 text-right">Timestamp</th>
+                                </tr>
+                            </thead>
+                            <tbody id="master-db-body" class="divide-y divide-slate-50">
+                                <tr><td colspan="4" class="py-8 text-center text-slate-400 italic">Accessing HIT Cloud Secure Servers...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
         </div>
     </main>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getFirestore, collection, query, where, orderBy, limit, onSnapshot, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+        import { getFirestore, collection, query, where, orderBy, limit, onSnapshot, addDoc, getDocs, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCcendyEqvaAw7ldnFOSwDEfQb74L_wfmw",
@@ -137,7 +160,6 @@
             if(savedStudID) syncStudentSchedule(savedStudID);
         }
 
-        // --- 📢 PUBLIC BOARD (Restored with Timestamps) ---
         onSnapshot(query(collection(db, "Notifications"), orderBy("timestamp", "desc"), limit(5)), (snapshot) => {
             let html = "";
             snapshot.forEach(doc => {
@@ -151,9 +173,10 @@
             document.getElementById('notif-board').innerHTML = html || "No campus notices today.";
         });
 
-        // --- 📊 ADMIN: LIVE MONITORING (Restored Traffic & Chart) ---
-        function initChairmanIntelligence() {
+        async function initChairmanIntelligence() {
             let chart = null;
+            
+            // Populate Charts and Traffic Table
             onSnapshot(query(collection(db, "NavLogs"), orderBy("timestamp", "desc"), limit(15)), (snapshot) => {
                 let tableHtml = ""; let counts = {}; let total = 0;
                 snapshot.forEach(doc => {
@@ -170,13 +193,28 @@
                 chart = new Chart(ctx, { type: 'bar', data: { labels: Object.keys(counts), datasets: [{ data: Object.values(counts), backgroundColor: '#22d3ee', borderRadius: 5 }] }, options: { indexAxis: 'y', plugins: { legend: { display: false } }, scales: { x: { display: false }, y: { ticks: { color: '#ffffff', font: { weight: 'bold', size: 9 } } } } } });
             });
 
+            // Master Database Logic (Cross-referencing Logins and Navigation)
+            const logSnap = await getDocs(collection(db, "Logins"));
+            const navSnap = await getDocs(collection(db, "NavLogs"));
+            let userRoles = {};
+            logSnap.forEach(doc => { userRoles[doc.data().email] = doc.data().role; });
+
+            let masterHtml = "";
+            navSnap.forEach(doc => {
+                const d = doc.data();
+                const uRole = userRoles[d.userId] || "Student";
+                const time = d.timestamp ? d.timestamp.toDate().toLocaleString() : "Recent";
+                const rStyle = uRole === 'admin' ? 'bg-red-100 text-red-600' : 'bg-cyan-100 text-cyan-600';
+                masterHtml += `<tr class="hover:bg-slate-50 transition"><td class="py-4 px-2 font-bold text-slate-800">${d.userId}</td><td class="py-4"><span class="px-2 py-1 rounded-lg font-black uppercase text-[9px] ${rStyle}">${uRole}</span></td><td class="py-4 font-black text-slate-700 italic">📍 ${d.destination}</td><td class="py-4 text-right font-mono text-slate-400 text-[10px]">${time}</td></tr>`;
+            });
+            document.getElementById('master-db-body').innerHTML = masterHtml || "<tr><td colspan='4'>No records.</td></tr>";
+
             document.getElementById('send-notif').onclick = async () => {
                 const msg = document.getElementById('notif-text').value;
                 if(msg) { await addDoc(collection(db, "Notifications"), { message: msg, timestamp: serverTimestamp() }); document.getElementById('notif-text').value = ""; }
             };
         }
 
-        // --- 📅 STUDENT: 24-HOUR LOGIC ---
         async function syncStudentSchedule(id) {
             onSnapshot(query(collection(db, "Schedules"), where("studentId", "==", id), limit(1)), (snapshot) => {
                 snapshot.forEach(doc => {
@@ -191,7 +229,6 @@
             });
         }
 
-        // --- 🔗 STUDENT: SAVE PROFILE ---
         document.getElementById('save-profile').onclick = () => {
             const id = document.getElementById('stud-id').value;
             if(!id) return alert("Enter Student ID");
