@@ -13,6 +13,7 @@ margin:0;padding:0;width:100%;height:100%;
 overflow:hidden;background:transparent;
 }
 
+/* CAMERA */
 #arjs-video{
 position:fixed;
 top:0;left:0;
@@ -22,54 +23,74 @@ object-fit:cover;
 z-index:-1;
 }
 
+/* VR BUTTON ONLY */
 .a-enter-vr-button{
 background:rgba(0,0,0,0.6)!important;
 border-radius:12px!important;
 right:15px!important;
 }
 
-.ui-layer{z-index:10;pointer-events:none}
-.interactive{pointer-events:auto}
+/* REMOVE WHITE VR PANEL */
+.a-enter-vr-modal,
+.a-enter-vr-overlay{
+display:none !important;
+}
 
-/* MAP OVERLAY */
-#mapOverlay{
+/* UI LAYER */
+.ui-layer{
 position:fixed;
+inset:0;
+z-index:10;
+pointer-events:none;
+}
+
+.interactive{
+pointer-events:auto;
+}
+
+/* TOP PANEL */
+.top-bar{
+position:absolute;
 top:0;
 left:0;
-width:100%;
-height:100%;
-background:#0a0a0a;
-display:none;
-z-index:50;
-}
-
-#mapCanvas{
-width:100%;
-height:100%;
-}
-
-/* BUTTON */
-.map-btn{
-position:absolute;
-top:80px;
-right:10px;
-z-index:20;
-padding:10px;
-background:#22d3ee;
-border-radius:10px;
-font-weight:bold;
-}
-
-/* CLOSE BUTTON */
-.close-map{
-position:absolute;
-top:20px;
-right:20px;
-z-index:60;
-padding:10px;
-background:red;
+right:0;
+padding:12px;
+background:rgba(0,0,0,0.6);
+backdrop-filter:blur(10px);
 color:white;
+}
+
+/* BOTTOM PANEL */
+.bottom-bar{
+position:absolute;
+bottom:0;
+left:0;
+right:0;
+padding:16px;
+background:rgba(0,0,0,0.6);
+backdrop-filter:blur(10px);
+color:white;
+}
+
+/* BUTTONS */
+.btn{
+padding:10px;
 border-radius:10px;
+background:#22d3ee;
+color:black;
+font-weight:bold;
+text-align:center;
+}
+
+.btn-danger{
+background:#ef4444;
+color:white;
+}
+
+.btn-dark{
+background:#111;
+color:white;
+border:1px solid #333;
 }
 
 .ai-wave{
@@ -80,31 +101,42 @@ animation:wave 2s linear infinite;
 0%{background-position:0%}
 100%{background-position:200%}
 }
+
 </style>
 </head>
 
 <body>
 
-<!-- MAP BUTTON -->
-<button class="map-btn interactive" id="map-btn">🗺️ 2D Map</button>
+<!-- UI -->
+<div class="ui-layer">
 
-<!-- MAP OVERLAY -->
-<div id="mapOverlay">
-<button class="close-map" id="close-map">Close</button>
-<canvas id="mapCanvas"></canvas>
+<!-- TOP PANEL -->
+<div class="top-bar interactive">
+<div class="flex justify-between items-center">
+
+<button id="back-btn" class="btn btn-danger">Back</button>
+
+<div class="text-sm text-center flex-1 px-2">
+<div><b>From:</b> <span id="current-location">Detecting...</span></div>
+<div><b>To:</b> <span id="destination-name">Not selected</span></div>
 </div>
 
-<!-- UI -->
-<div class="ui-layer fixed inset-0 flex flex-col justify-end p-6">
-<div class="interactive">
+<button id="voice-btn" class="btn">🎤</button>
 
-<select id="end-node" class="bg-black text-white p-3 rounded-xl w-full"></select>
+</div>
+</div>
 
-<button id="go-btn" class="ai-wave w-full py-3 mt-2 text-white rounded-xl">
+<!-- BOTTOM PANEL -->
+<div class="bottom-bar interactive">
+
+<select id="end-node" class="w-full p-2 rounded bg-black text-white mb-2"></select>
+
+<button id="go-btn" class="btn w-full mb-2 ai-wave">
 Start Navigation
 </button>
 
 </div>
+
 </div>
 
 <!-- AR SCENE -->
@@ -133,7 +165,7 @@ projectId:"hit-navigator-56b2b"
 });
 const db = getFirestore(app);
 
-// MAP DATA
+// MAP
 const mapData = {
 "s1": { name:"S1 Conference Room", x:2.5, z:9.8 },
 "s2": { name:"S2 CS Lab", x:2.5, z:18.2 },
@@ -154,7 +186,6 @@ synth.speak(new SpeechSynthesisUtterance(text));
 const anchor = { lat:-17.8252, lng:31.0335 };
 
 let smoothX=0, smoothZ=0;
-let lastHeading = 0;
 
 navigator.geolocation.watchPosition(pos=>{
 const scale=111139;
@@ -162,25 +193,14 @@ const scale=111139;
 const rawX=(pos.coords.longitude-anchor.lng)*scale;
 const rawZ=-(pos.coords.latitude-anchor.lat)*scale;
 
-const prevX = smoothX;
-const prevZ = smoothZ;
-
 smoothX+=(rawX-smoothX)*0.12;
 smoothZ+=(rawZ-smoothZ)*0.12;
 
-// heading for 2D arrow
-const dx = smoothX - prevX;
-const dz = smoothZ - prevZ;
-if(Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01){
-lastHeading = Math.atan2(dx, dz);
-}
-
-document.getElementById("current-location")?.innerText =
+document.getElementById("current-location").innerText =
 smoothX.toFixed(1)+", "+smoothZ.toFixed(1);
 
 if(navigationActive){
 updateNavigation();
-updateMap();
 }
 
 });
@@ -217,6 +237,7 @@ let destinationId=null;
 function startNav(id){
 
 destinationId=id;
+document.getElementById("destination-name").innerText = mapData[id].name;
 
 currentRoute=[{...mapData["s1"]}, mapData[id]];
 currentIndex=0;
@@ -226,7 +247,7 @@ updateNavigation();
 }
 
 // UPDATE NAV
-async function updateNavigation(){
+function updateNavigation(){
 
 if(currentIndex >= currentRoute.length-1){
 speak("You have arrived");
@@ -271,16 +292,8 @@ Math.pow(end.z - start.z,2)
 const turn=getTurnInstruction(end.x - start.x, end.z - start.z);
 
 if(dist < 6 && !window._spoken){
-const instruction = `${turn} and walk ${stepDist} meters`;
-speak(instruction);
-
+speak(`${turn} and walk ${stepDist} meters`);
 window._spoken=true;
-
-await addDoc(collection(db,"NavLogs"),{
-destination: mapData[destinationId].name,
-instruction,
-timestamp: serverTimestamp()
-});
 }
 
 if(dist > 8){
@@ -293,61 +306,6 @@ window._spoken=false;
 updateNavigation();
 }
 
-}
-
-// =====================
-// 2D MAP LOGIC
-// =====================
-const mapOverlay = document.getElementById("mapOverlay");
-const canvas = document.getElementById("mapCanvas");
-const ctx = canvas.getContext("2d");
-
-document.getElementById("map-btn").onclick=()=>{
-mapOverlay.style.display="block";
-resizeCanvas();
-};
-
-document.getElementById("close-map").onclick=()=>{
-mapOverlay.style.display="none";
-};
-
-function resizeCanvas(){
-canvas.width = window.innerWidth;
-canvas.height = window.innerHeight;
-}
-
-function updateMap(){
-if(mapOverlay.style.display !== "block") return;
-
-ctx.clearRect(0,0,canvas.width,canvas.height);
-
-// center scaling
-const scale = 2;
-
-// draw destination
-if(destinationId){
-const dest = mapData[destinationId];
-
-ctx.fillStyle="red";
-ctx.beginPath();
-ctx.arc(canvas.width/2 + dest.x*scale, canvas.height/2 + dest.z*scale, 8,0,Math.PI*2);
-ctx.fill();
-}
-
-// draw user (green arrow)
-ctx.save();
-ctx.translate(canvas.width/2 + smoothX*scale, canvas.height/2 + smoothZ*scale);
-ctx.rotate(lastHeading);
-
-ctx.fillStyle="lime";
-ctx.beginPath();
-ctx.moveTo(0,-10);
-ctx.lineTo(6,10);
-ctx.lineTo(-6,10);
-ctx.closePath();
-ctx.fill();
-
-ctx.restore();
 }
 
 // UI
@@ -364,13 +322,20 @@ document.getElementById("go-btn").onclick=()=>{
 if(select.value) startNav(select.value);
 };
 
-document.getElementById("back-btn")?.addEventListener("click",()=>{
+document.getElementById("back-btn").onclick=()=>{
 navigationActive=false;
-});
+currentIndex=0;
 
-document.getElementById("voice-btn")?.addEventListener("click",()=>{
+document.getElementById("marker").setAttribute("visible",false);
+document.getElementById("label").setAttribute("visible",false);
+document.getElementById("arrow").setAttribute("visible",false);
+
+speak("Navigation stopped");
+};
+
+document.getElementById("voice-btn").onclick=()=>{
 recognition.start();
-});
+};
 
 recognition.onresult=(e)=>{
 const text=e.results[0][0].transcript.toLowerCase();
