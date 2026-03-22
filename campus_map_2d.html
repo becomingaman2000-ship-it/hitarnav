@@ -46,6 +46,10 @@
 
     <script>
         // --- 1. INITIALIZE MAP ---
+        
+        const userPart = localStorage.getItem('hit_current_part') || 'PART_II';
+        
+// Logic to look up next room for this Part...
         // Centered on HIT Main Entrance
         const map = L.map('map', { zoomControl: false }).setView([-17.8202, 31.0532], 18);
 
@@ -74,6 +78,8 @@
         let destinationMarker = null;
         let routeLine = L.polyline([], { color: '#22c55e', weight: 5, opacity: 0.6, dashArray: '10, 10' }).addTo(map);
 
+       
+// Logic to look up next room for this Part...
         // --- 3. REAL-TIME NAVIGATION & MOVEMENT ---
         if (navigator.geolocation) {
             navigator.geolocation.watchPosition((position) => {
