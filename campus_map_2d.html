@@ -1,0 +1,133 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8" />
+    <title>HIT NAV PRO | 2D Pathfinding</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        #map { height: 100vh; width: 100%; background: #0f172a; }
+        /* Style for the real-time movement arrow */
+        .navigation-arrow {
+            transition: transform 0.2s ease-out;
+            filter: drop-shadow(0 0 5px #22c55e);
+        }
+    </style>
+</head>
+<body class="bg-[#0f172a] overflow-hidden">
+
+    <div class="fixed top-6 left-6 right-6 z-[1000] pointer-events-none">
+        <div class="bg-slate-900/90 backdrop-blur-xl p-5 rounded-[2rem] border border-white/10 shadow-2xl flex justify-between items-center">
+            <div>
+                <h2 class="text-cyan-400 font-black tracking-tighter text-lg uppercase">2D Tactical Map</h2>
+                <p id="nav-status" class="text-[10px] text-green-500 font-bold uppercase tracking-widest animate-pulse">● Searching for Satellite...</p>
+            </div>
+            <div class="text-right">
+                <p class="text-[10px] text-slate-500 font-bold uppercase">Distance to Flag</p>
+                <p id="distance-display" class="text-xl font-black text-white">-- <span class="text-xs">m</span></p>
+            </div>
+        </div>
+    </div>
+
+    <div id="map"></div>
+
+    <div class="fixed bottom-8 left-6 right-6 z-[1000]">
+        <div class="bg-slate-900/90 backdrop-blur-xl p-6 rounded-[2.5rem] border border-white/10 shadow-2xl">
+            <div class="flex gap-4">
+                <button onclick="setDestination()" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-4 rounded-2xl font-black text-xs uppercase tracking-widest transition shadow-[0_0_20px_rgba(34,197,94,0.3)]">Set Flag Destination</button>
+                <button onclick="recenterMap()" class="bg-slate-800 p-4 rounded-2xl border border-white/5">
+                    <span class="text-xl">🎯</span>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- 1. INITIALIZE MAP ---
+        // Centered on HIT Main Entrance
+        const map = L.map('map', { zoomControl: false }).setView([-17.8202, 31.0532], 18);
+
+        // Dark Mode Tile Layer
+        L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+            attribution: '&copy; OpenStreetMap'
+        }).addTo(map);
+
+        // --- 2. ASSETS & MARKERS ---
+        const arrowIcon = L.divIcon({
+            className: 'navigation-arrow',
+            html: `<svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M12 2L4.5 20.29L5.21 21L12 18L18.79 21L19.5 20.29L12 2Z" fill="#22c55e" stroke="white" stroke-width="1"/>
+                   </svg>`,
+            iconSize: [30, 30],
+            iconAnchor: [15, 15]
+        });
+
+        const flagIcon = L.icon({
+            iconUrl: 'https://cdn-icons-png.flaticon.com/512/1458/1458512.png', // Flag Icon
+            iconSize: [40, 40],
+            iconAnchor: [20, 40]
+        });
+
+        let userMarker = L.marker([-17.8202, 31.0532], { icon: arrowIcon }).addTo(map);
+        let destinationMarker = null;
+        let routeLine = L.polyline([], { color: '#22c55e', weight: 5, opacity: 0.6, dashArray: '10, 10' }).addTo(map);
+
+        // --- 3. REAL-TIME NAVIGATION & MOVEMENT ---
+        if (navigator.geolocation) {
+            navigator.geolocation.watchPosition((position) => {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+                const newPos = [lat, lng];
+
+                // Update Position
+                userMarker.setLatLng(newPos);
+                document.getElementById('nav-status').innerText = "● Signal Locked: Moving";
+                
+                // Update Path if destination exists
+                if (destinationMarker) {
+                    updateRoute(newPos, destinationMarker.getLatLng());
+                }
+            }, 
+            (err) => console.error(err), 
+            { enableHighAccuracy: true });
+        }
+
+        // --- 4. REAL-TIME ROTATION (Compass) ---
+        window.addEventListener('deviceorientationabsolute', (event) => {
+            const heading = event.alpha || event.webkitCompassHeading;
+            if (heading) {
+                const arrowElement = document.querySelector('.navigation-arrow svg');
+                if (arrowElement) {
+                    // Adjust rotation based on compass heading
+                    arrowElement.style.transform = `rotate(${heading}deg)`;
+                }
+            }
+        }, true);
+
+        // --- 5. INTERACTIVE FUNCTIONS ---
+        function setDestination() {
+            map.once('click', (e) => {
+                if (destinationMarker) map.removeLayer(destinationMarker);
+                
+                destinationMarker = L.marker(e.latlng, { icon: flagIcon }).addTo(map);
+                updateRoute(userMarker.getLatLng(), e.latlng);
+            });
+            document.getElementById('nav-status').innerText = "● Tap Map to place Flag";
+        }
+
+        function updateRoute(start, end) {
+            routeLine.setLatLngs([start, end]);
+            
+            // Calculate distance (Simple Haversine)
+            const dist = map.distance(start, end);
+            document.getElementById('distance-display').innerHTML = `${Math.round(dist)} <span class="text-xs text-slate-500">m</span>`;
+        }
+
+        function recenterMap() {
+            map.panTo(userMarker.getLatLng());
+        }
+    </script>
+</body>
+</html>
