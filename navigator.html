@@ -44,7 +44,6 @@ animation:wave 2s linear infinite;
 
 <body>
 
-<!-- UI -->
 <div class="ui-layer fixed inset-0 flex flex-col justify-end p-6">
 <div class="interactive">
 
@@ -57,25 +56,19 @@ Start Navigation
 </div>
 </div>
 
-<!-- AR SCENE -->
 <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: true">
 
 <a-sphere id="marker" radius="0.4" color="#22d3ee" visible="false"></a-sphere>
 <a-text id="label" align="center" color="#fff" visible="false"></a-text>
-
 <a-cone id="arrow" radius-bottom="0.2" height="0.6" color="#22d3ee" visible="false"></a-cone>
 
 <a-entity id="path"></a-entity>
-
 <a-entity camera></a-entity>
 
 </a-scene>
 
 <script type="module">
 
-// =====================
-// FIREBASE
-// =====================
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
@@ -84,13 +77,13 @@ apiKey:"AIzaSy...",
 authDomain:"hit-navigator-56b2b.firebaseapp.com",
 projectId:"hit-navigator-56b2b"
 });
+
 const db = getFirestore(app);
 
 // =====================
 // MAP DATA
 // =====================
 const mapData = {
-
 "s1": { name:"S1 Conference Room", x:2.5, z:9.8 },
 "s2": { name:"S2 CS Lab", x:2.5, z:18.2 },
 "s3": { name:"S3 SME Lab 1", x:2.5, z:26.6 },
@@ -101,8 +94,10 @@ const mapData = {
 "s8": { name:"S8 IME 3", x:2.5, z:81.2 },
 
 "library": { name:"Library Reserve", x:-2.5, z:81.2 },
-"s10b": { name:"Electronic Commerce Office", x:-2.5, z:74.2 },
+
 "s10a": { name:"Chairman Office", x:-2.5, z:70.0 },
+"s10b": { name:"Electronic Commerce Office", x:-2.5, z:74.2 },
+
 "s13b": { name:"Chairman FE Office", x:-2.5, z:58.8 },
 "s14": { name:"TDC Office", x:-2.5, z:50.4 },
 "s15b": { name:"Chairman TDC", x:-2.5, z:42.0 },
@@ -121,7 +116,7 @@ const mapData = {
 };
 
 // =====================
-// WAYPOINT ROUTES
+// ROUTES
 // =====================
 const routes = {
 "s1-library":[
@@ -147,7 +142,7 @@ synth.speak(new SpeechSynthesisUtterance(text));
 }
 
 // =====================
-// GPS SMOOTHING
+// GPS REAL-TIME TRACKING
 // =====================
 const anchor = { lat:-17.8252, lng:31.0335 };
 
@@ -169,12 +164,11 @@ updateNavigation();
 });
 
 // =====================
-// PATH DRAW
+// PATH VISUAL
 // =====================
 function drawPath(x,z){
 const path=document.getElementById("path");
 path.innerHTML="";
-
 for(let i=1;i<=12;i++){
 const r=i/12;
 const dot=document.createElement("a-sphere");
@@ -186,18 +180,17 @@ path.appendChild(dot);
 }
 
 // =====================
-// TURN LOGIC
+// TURN LOGIC (DISTANCE-AWARE)
 // =====================
 function getTurnInstruction(x,z){
 const angle=Math.atan2(x,z)*(180/Math.PI);
-
 if(angle>20) return "Turn right";
 if(angle<-20) return "Turn left";
 return "Go straight";
 }
 
 // =====================
-// NAV STATE
+// NAVIGATION STATE
 // =====================
 let currentRoute=[];
 let currentIndex=0;
@@ -211,14 +204,7 @@ function startNav(id){
 
 destinationId=id;
 
-const key=Object.keys(routes).find(r=>r.endsWith(id));
-
-if(key){
-currentRoute=routes[key];
-}else{
 currentRoute=[{...mapData["s1"]}, mapData[id]];
-}
-
 currentIndex=0;
 navigationActive=true;
 
@@ -226,9 +212,9 @@ updateNavigation();
 }
 
 // =====================
-// REAL-TIME NAVIGATION
+// UPDATE NAVIGATION (REAL TIME)
 // =====================
-function updateNavigation(){
+async function updateNavigation(){
 
 if(currentIndex >= currentRoute.length-1){
 speak("You have arrived");
@@ -246,50 +232,51 @@ const marker=document.getElementById("marker");
 const label=document.getElementById("label");
 const arrow=document.getElementById("arrow");
 
-// marker
 marker.setAttribute("position",`${dx} 0 ${dz}`);
 marker.setAttribute("visible",true);
 
-// label
 label.setAttribute("value","Navigating");
 label.setAttribute("position",`${dx} 1.5 ${dz}`);
 label.setAttribute("visible",true);
 
-// arrow
 const angle=Math.atan2(dx,dz)*(180/Math.PI);
 arrow.setAttribute("rotation",`0 ${angle} 0`);
 arrow.setAttribute("position","0 0 -1");
 arrow.setAttribute("visible",true);
 
-// path
 drawPath(dx,dz);
 
-// distance to waypoint
 const dist=Math.sqrt(
 Math.pow(end.x - smoothX,2)+
 Math.pow(end.z - smoothZ,2)
 );
 
-// step distance
 const stepDist=Math.sqrt(
 Math.pow(end.x - start.x,2)+
 Math.pow(end.z - start.z,2)
 ).toFixed(1);
 
-// turn instruction
 const turn=getTurnInstruction(end.x - start.x, end.z - start.z);
 
-// voice throttling
+// speak only when close to waypoint
 if(dist < 6 && !window._spoken){
-speak(`${turn} and walk ${stepDist} meters`);
+const instruction = `${turn} and walk ${stepDist} meters`;
+speak(instruction);
+
 window._spoken=true;
+
+// FIREBASE LOG
+await addDoc(collection(db,"NavLogs"),{
+destination: mapData[destinationId].name,
+instruction,
+timestamp: serverTimestamp()
+});
 }
 
 if(dist > 8){
 window._spoken=false;
 }
 
-// waypoint reached
 if(dist < 3){
 currentIndex++;
 window._spoken=false;
@@ -299,7 +286,7 @@ updateNavigation();
 }
 
 // =====================
-// UI
+// UI SETUP
 // =====================
 const select=document.getElementById("end-node");
 
