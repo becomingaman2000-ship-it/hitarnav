@@ -31,6 +31,47 @@ right:15px!important;
 .ui-layer{z-index:10;pointer-events:none}
 .interactive{pointer-events:auto}
 
+/* MAP OVERLAY */
+#mapOverlay{
+position:fixed;
+top:0;
+left:0;
+width:100%;
+height:100%;
+background:#0a0a0a;
+display:none;
+z-index:50;
+}
+
+#mapCanvas{
+width:100%;
+height:100%;
+}
+
+/* BUTTON */
+.map-btn{
+position:absolute;
+top:80px;
+right:10px;
+z-index:20;
+padding:10px;
+background:#22d3ee;
+border-radius:10px;
+font-weight:bold;
+}
+
+/* CLOSE BUTTON */
+.close-map{
+position:absolute;
+top:20px;
+right:20px;
+z-index:60;
+padding:10px;
+background:red;
+color:white;
+border-radius:10px;
+}
+
 .ai-wave{
 background:linear-gradient(90deg,#22d3ee,#0891b2,#22d3ee);
 animation:wave 2s linear infinite;
@@ -44,6 +85,16 @@ animation:wave 2s linear infinite;
 
 <body>
 
+<!-- MAP BUTTON -->
+<button class="map-btn interactive" id="map-btn">🗺️ 2D Map</button>
+
+<!-- MAP OVERLAY -->
+<div id="mapOverlay">
+<button class="close-map" id="close-map">Close</button>
+<canvas id="mapCanvas"></canvas>
+</div>
+
+<!-- UI -->
 <div class="ui-layer fixed inset-0 flex flex-col justify-end p-6">
 <div class="interactive">
 
@@ -56,13 +107,16 @@ Start Navigation
 </div>
 </div>
 
+<!-- AR SCENE -->
 <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: true">
 
 <a-sphere id="marker" radius="0.4" color="#22d3ee" visible="false"></a-sphere>
 <a-text id="label" align="center" color="#fff" visible="false"></a-text>
+
 <a-cone id="arrow" radius-bottom="0.2" height="0.6" color="#22d3ee" visible="false"></a-cone>
 
 <a-entity id="path"></a-entity>
+
 <a-entity camera></a-entity>
 
 </a-scene>
@@ -77,63 +131,18 @@ apiKey:"AIzaSy...",
 authDomain:"hit-navigator-56b2b.firebaseapp.com",
 projectId:"hit-navigator-56b2b"
 });
-
 const db = getFirestore(app);
 
-// =====================
 // MAP DATA
-// =====================
 const mapData = {
 "s1": { name:"S1 Conference Room", x:2.5, z:9.8 },
 "s2": { name:"S2 CS Lab", x:2.5, z:18.2 },
-"s3": { name:"S3 SME Lab 1", x:2.5, z:26.6 },
-"s4": { name:"S4 SME Lab 2", x:2.5, z:42.0 },
-"s5": { name:"S5 FPT 4", x:2.5, z:50.4 },
-"s6": { name:"S6 FE 4", x:2.5, z:58.8 },
-"s7": { name:"S7 CS 4", x:2.5, z:74.2 },
 "s8": { name:"S8 IME 3", x:2.5, z:81.2 },
-
 "library": { name:"Library Reserve", x:-2.5, z:81.2 },
-
-"s10a": { name:"Chairman Office", x:-2.5, z:70.0 },
-"s10b": { name:"Electronic Commerce Office", x:-2.5, z:74.2 },
-
-"s13b": { name:"Chairman FE Office", x:-2.5, z:58.8 },
-"s14": { name:"TDC Office", x:-2.5, z:50.4 },
-"s15b": { name:"Chairman TDC", x:-2.5, z:42.0 },
-"s16": { name:"Director Tech Centre", x:-2.5, z:9.8 },
-
-"n6": { name:"N6 Proposed Pharmacy", x:-2.5, z:-38.5 },
-"n7": { name:"N7 FPT Lab", x:-2.5, z:-46.2 },
-"n8": { name:"N8 FPT Lab 2", x:-2.5, z:-62.3 },
-"n9": { name:"N9 FE 1", x:-2.5, z:-70.0 },
-
-"n10": { name:"N10 Proposed Analytic Lab", x:2.5, z:-70.0 },
-"n11": { name:"N11 Pharmaceutical Lab", x:2.5, z:-62.3 },
-"n12": { name:"N12 Pneumatic Lab", x:2.5, z:-46.2 },
-"n2": { name:"N2 Bio Tech Lab", x:2.5, z:-86.1 },
 "n1": { name:"N1 Hydraulic Lab", x:2.5, z:-93.8 }
 };
 
-// =====================
-// ROUTES
-// =====================
-const routes = {
-"s1-library":[
-{x:2.5,z:9.8},
-{x:2.5,z:50},
-{x:-2.5,z:81.2}
-],
-"s1-n1":[
-{x:2.5,z:9.8},
-{x:2.5,z:-40},
-{x:2.5,z:-93.8}
-]
-};
-
-// =====================
 // VOICE
-// =====================
 const synth = window.speechSynthesis;
 const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 
@@ -141,12 +150,11 @@ function speak(text){
 synth.speak(new SpeechSynthesisUtterance(text));
 }
 
-// =====================
-// GPS REAL-TIME TRACKING
-// =====================
+// GPS
 const anchor = { lat:-17.8252, lng:31.0335 };
 
 let smoothX=0, smoothZ=0;
+let lastHeading = 0;
 
 navigator.geolocation.watchPosition(pos=>{
 const scale=111139;
@@ -154,18 +162,30 @@ const scale=111139;
 const rawX=(pos.coords.longitude-anchor.lng)*scale;
 const rawZ=-(pos.coords.latitude-anchor.lat)*scale;
 
+const prevX = smoothX;
+const prevZ = smoothZ;
+
 smoothX+=(rawX-smoothX)*0.12;
 smoothZ+=(rawZ-smoothZ)*0.12;
 
+// heading for 2D arrow
+const dx = smoothX - prevX;
+const dz = smoothZ - prevZ;
+if(Math.abs(dx) > 0.01 || Math.abs(dz) > 0.01){
+lastHeading = Math.atan2(dx, dz);
+}
+
+document.getElementById("current-location")?.innerText =
+smoothX.toFixed(1)+", "+smoothZ.toFixed(1);
+
 if(navigationActive){
 updateNavigation();
+updateMap();
 }
 
 });
 
-// =====================
-// PATH VISUAL
-// =====================
+// PATH
 function drawPath(x,z){
 const path=document.getElementById("path");
 path.innerHTML="";
@@ -179,9 +199,7 @@ path.appendChild(dot);
 }
 }
 
-// =====================
-// TURN LOGIC (DISTANCE-AWARE)
-// =====================
+// TURN
 function getTurnInstruction(x,z){
 const angle=Math.atan2(x,z)*(180/Math.PI);
 if(angle>20) return "Turn right";
@@ -189,17 +207,13 @@ if(angle<-20) return "Turn left";
 return "Go straight";
 }
 
-// =====================
-// NAVIGATION STATE
-// =====================
+// NAV STATE
 let currentRoute=[];
 let currentIndex=0;
 let navigationActive=false;
 let destinationId=null;
 
-// =====================
-// START NAVIGATION
-// =====================
+// START NAV
 function startNav(id){
 
 destinationId=id;
@@ -211,9 +225,7 @@ navigationActive=true;
 updateNavigation();
 }
 
-// =====================
-// UPDATE NAVIGATION (REAL TIME)
-// =====================
+// UPDATE NAV
 async function updateNavigation(){
 
 if(currentIndex >= currentRoute.length-1){
@@ -258,14 +270,12 @@ Math.pow(end.z - start.z,2)
 
 const turn=getTurnInstruction(end.x - start.x, end.z - start.z);
 
-// speak only when close to waypoint
 if(dist < 6 && !window._spoken){
 const instruction = `${turn} and walk ${stepDist} meters`;
 speak(instruction);
 
 window._spoken=true;
 
-// FIREBASE LOG
 await addDoc(collection(db,"NavLogs"),{
 destination: mapData[destinationId].name,
 instruction,
@@ -286,8 +296,61 @@ updateNavigation();
 }
 
 // =====================
-// UI SETUP
+// 2D MAP LOGIC
 // =====================
+const mapOverlay = document.getElementById("mapOverlay");
+const canvas = document.getElementById("mapCanvas");
+const ctx = canvas.getContext("2d");
+
+document.getElementById("map-btn").onclick=()=>{
+mapOverlay.style.display="block";
+resizeCanvas();
+};
+
+document.getElementById("close-map").onclick=()=>{
+mapOverlay.style.display="none";
+};
+
+function resizeCanvas(){
+canvas.width = window.innerWidth;
+canvas.height = window.innerHeight;
+}
+
+function updateMap(){
+if(mapOverlay.style.display !== "block") return;
+
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+// center scaling
+const scale = 2;
+
+// draw destination
+if(destinationId){
+const dest = mapData[destinationId];
+
+ctx.fillStyle="red";
+ctx.beginPath();
+ctx.arc(canvas.width/2 + dest.x*scale, canvas.height/2 + dest.z*scale, 8,0,Math.PI*2);
+ctx.fill();
+}
+
+// draw user (green arrow)
+ctx.save();
+ctx.translate(canvas.width/2 + smoothX*scale, canvas.height/2 + smoothZ*scale);
+ctx.rotate(lastHeading);
+
+ctx.fillStyle="lime";
+ctx.beginPath();
+ctx.moveTo(0,-10);
+ctx.lineTo(6,10);
+ctx.lineTo(-6,10);
+ctx.closePath();
+ctx.fill();
+
+ctx.restore();
+}
+
+// UI
 const select=document.getElementById("end-node");
 
 for(let id in mapData){
@@ -301,10 +364,13 @@ document.getElementById("go-btn").onclick=()=>{
 if(select.value) startNav(select.value);
 };
 
-// =====================
-// VOICE INPUT
-// =====================
-document.body.addEventListener("dblclick",()=>recognition.start());
+document.getElementById("back-btn")?.addEventListener("click",()=>{
+navigationActive=false;
+});
+
+document.getElementById("voice-btn")?.addEventListener("click",()=>{
+recognition.start();
+});
 
 recognition.onresult=(e)=>{
 const text=e.results[0][0].transcript.toLowerCase();
