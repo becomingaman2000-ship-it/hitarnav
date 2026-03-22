@@ -80,24 +80,45 @@
             }
 
             try {
-                let userCredential;
-                if (type === 'signup') {
-                    userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                    await setDoc(doc(db, role + "s", userCredential.user.uid), {
-                        email: email,
-                        role: role,
-                        registeredAt: serverTimestamp()
-                    });
-                } else {
-                    userCredential = await signInWithEmailAndPassword(auth, email, password);
-                }
+    let userCredential;
+    if (type === 'signup') {
+        userCredential = await createUserWithEmailAndPassword(auth, email, password);
+        // Using doc/setDoc for the user profile to ensure one profile per UID
+        await setDoc(doc(db, role + "s", userCredential.user.uid), {
+            email: email,
+            role: role,
+            registeredAt: serverTimestamp()
+        });
+    } else {
+        userCredential = await signInWithEmailAndPassword(auth, email, password);
+    }
 
-                await addDoc(collection(db, "Logins"), {
-                    uid: userCredential.user.uid,
-                    email: email,
-                    role: role,
-                    timestamp: serverTimestamp()
-                });
+    // FIX: Use a simple addDoc without a manual ID to avoid the "already exists" error
+                
+    try {
+        await addDoc(collection(db, "Logins"), {
+            uid: userCredential.user.uid,
+            email: email,
+            role: role,
+            timestamp: serverTimestamp()
+        });
+    } catch (logError) {
+        console.warn("Login log skipped, but proceeding to dashboard.");
+    }
+
+    // Set the session data
+    localStorage.setItem('hit_user_role', role);
+    localStorage.setItem('hit_user_email', email);
+    
+    if (role === 'student') {
+        localStorage.setItem('hit_current_part', 'PART_II'); 
+    }
+
+    window.location.href = 'dashboard.html';
+
+} catch (e) {
+    // Error handling...
+});
 
                 // Updated Logic: All roles go to Dashboard first
                 localStorage.setItem('hit_user_role', role);
@@ -108,7 +129,7 @@
                     localStorage.setItem('hit_current_part', 'PART_II'); 
                 }
 
-                
+               
             } catch (e) {
                 if (e.code === 'auth/too-many-requests') {
                     alert("🛡️ LOCKED: Too many attempts. Wait 15 mins or change network.");
