@@ -12,7 +12,6 @@
         .ui-layer { z-index: 10; pointer-events: none; }
         .interactive { pointer-events: auto; }
         
-        /* Smooth AI Wave Animation */
         .ai-wave {
             background: linear-gradient(90deg, #22d3ee, #0891b2, #22d3ee);
             background-size: 200% 200%;
@@ -55,30 +54,55 @@
             
             <div class="bg-black/50 backdrop-blur-2xl p-2 rounded-[2.5rem] border border-white/10 shadow-2xl">
                 <div class="flex flex-col gap-1 p-2">
-                    <select id="end-node" class="bg-slate-800/80 text-white text-xs p-4 rounded-3xl outline-none border border-white/5 font-bold">
+                    <select id="start-node" class="bg-slate-900/90 text-white text-[10px] p-3 mb-1 rounded-2xl outline-none border border-white/5 font-bold">
+                        <option>Start: Current Location</option>
+                    </select>
+
+                    <select id="end-node" class="bg-slate-800/80 text-white text-[11px] p-3 rounded-2xl outline-none border border-white/5 font-bold">
                         <option value="">Where are we going today?</option>
-                        <optgroup label="S-BLOCK (Admin & Labs)">
+                        <optgroup label="S-BLOCK">
+                            <option value="s1">S1 Conference Room</option>
+                            <option value="s2">S2 Computer Science Lab</option>
+                            <option value="s3">S3 SME Lab 1</option>
+                            <option value="s4">S4 SME Lab 2</option>
+                            <option value="s5">S5 FPT 4</option>
+                            <option value="s6">S6 FE 4</option>
+                            <option value="s7">S7 CS 4</option>
+                            <option value="s8">S8 IME 3</option>
                             <option value="s10a">Chairman Office</option>
                             <option value="s10b">Electronic Commerce Office</option>
-                            <option value="s2">S2 Computer Science Lab</option>
-                            <option value="s1">S1 Conference Room</option>
+                            <option value="s13b">Chairman FE Office</option>
+                            <option value="s14">TDC Office</option>
+                            <option value="s15b">Chairman TDC</option>
+                            <option value="s16">Director Tech Centre</option>
+                            <option value="library">Library Reserve</option>
                         </optgroup>
-                        <optgroup label="N-BLOCK (Engineering)">
-                            <option value="n4">N4 CS Lab 1</option>
-                            <option value="n9">N9 FE Workshop</option>
+                        <optgroup label="N-BLOCK">
+                            <option value="n1">N1 Hydraulic Lab</option>
+                            <option value="n2">N2 Bio Tech Lab</option>
+                            <option value="n3">N3 CPSE Lab</option>
+                            <option value="n4">N4 CS 1</option>
+                            <option value="n5">N5 IME 1</option>
+                            <option value="n6">N6 Proposed Pharmacy</option>
+                            <option value="n7">N7 FPT Lab</option>
+                            <option value="n8">N8 FPT Lab 2</option>
+                            <option value="n9">N9 FE 1</option>
+                            <option value="n10">N10 Proposed Analytic Lab</option>
+                            <option value="n11">N11 Pharmaceutical Lab</option>
+                            <option value="n12">N12 Pneumatic Lab</option>
                         </optgroup>
                     </select>
-                    <button id="go-btn" class="ai-wave text-white py-4 rounded-3xl font-black text-xs uppercase tracking-widest shadow-lg">Activate AR Path</button>
+                    <button id="go-btn" class="ai-wave text-white py-3 mt-1 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg">Activate AR Path</button>
                 </div>
             </div>
 
             <div class="flex flex-col items-center pb-6">
-                <div id="voice-trigger" class="glowing-btn w-20 h-20 bg-cyan-500 rounded-full flex items-center justify-center text-3xl shadow-2xl cursor-pointer active:scale-90 transition-transform">
+                <div id="voice-trigger" class="glowing-btn w-16 h-16 bg-cyan-500 rounded-full flex items-center justify-center text-2xl shadow-2xl cursor-pointer active:scale-90 transition-transform">
                     🎙️
                 </div>
-                <div class="mt-4 bg-black/60 backdrop-blur-lg border border-white/10 px-6 py-3 rounded-full text-center max-w-[280px]">
-                    <p id="ai-text" class="text-cyan-400 text-[10px] font-black uppercase tracking-tighter">AI Assistant Standing By</p>
-                    <p id="ai-status" class="text-white/60 text-[9px] font-medium mt-1">"Ask me where a room is"</p>
+                <div class="mt-4 bg-black/60 backdrop-blur-lg border border-white/10 px-6 py-2 rounded-full text-center max-w-[280px]">
+                    <p id="ai-text" class="text-cyan-400 text-[9px] font-black uppercase tracking-tighter">AI Assistant Standing By</p>
+                    <p id="ai-status" class="text-white/60 text-[8px] font-medium mt-1">"Take me to the Electronic Commerce Office"</p>
                 </div>
             </div>
         </div>
@@ -89,7 +113,7 @@
                   animation="property: position; to: 0 0.8 -5; dir: alternate; dur: 1200; loop: true"
                   material="emissive: #22d3ee; emissiveIntensity: 2; opacity: 0.8; transparent: true">
         </a-sphere>
-        <a-text id="marker-label" value="" align="center" position="0 1.8 -5" scale="3 3 3" font="exo2bold" color="#ffffff" visible="false"></a-text>
+        <a-text id="marker-label" value="" align="center" position="0 1.8 -5" scale="2.5 2.5 2.5" font="exo2bold" color="#ffffff" visible="false"></a-text>
         <a-entity camera></a-entity>
     </a-scene>
 
@@ -97,7 +121,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Your Config
         const firebaseConfig = {
             apiKey: "AIzaSyCcendyEqvaAw7ldnFOSwDEfQb74L_wfmw",
             authDomain: "hit-navigator-56b2b.firebaseapp.com",
@@ -110,13 +133,17 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
+        // Comprehensive room list from blueprint
         const rooms = {
-            "s1": "S1 Conference", "s2": "S2 CS Lab", "s10a": "Chairman Office", "s10b": "Electronic Commerce Office",
-            "n4": "N4 CS 1", "n9": "N9 FE 1", "n12": "N12 Pneumatic Lab"
-            // ... (Rest of your rooms)
+            "s1": "S1 Conference Room", "s2": "S2 Computer Science Lab", "s3": "S3 SME Lab 1", "s4": "S4 SME Lab 2",
+            "s5": "S5 FPT 4", "s6": "S6 FE 4", "s7": "S7 CS 4", "s8": "S8 IME 3", "s10a": "Chairman Office",
+            "s10b": "Electronic Commerce Office", "s13b": "Chairman FE Office", "s14": "TDC Office",
+            "s15b": "Chairman TDC", "s16": "Director Tech Centre", "library": "Library Reserve",
+            "n1": "N1 Hydraulic Lab", "n2": "N2 Bio Tech Lab", "n3": "N3 CPSE Lab", "n4": "N4 CS 1",
+            "n5": "N5 IME 1", "n6": "N6 Proposed Pharmacy", "n7": "N7 FPT Lab", "n8": "N8 FPT Lab 2",
+            "n9": "N9 FE 1", "n10": "N10 Proposed Analytic Lab", "n11": "N11 Pharmaceutical Lab", "n12": "N12 Pneumatic Lab"
         };
 
-        // --- 🗣️ AI SMART VOICE SYSTEM ---
         const synth = window.speechSynthesis;
         const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
         recognition.lang = 'en-US';
@@ -124,9 +151,8 @@
         const speak = (text) => {
             const utter = new SpeechSynthesisUtterance(text);
             const voices = synth.getVoices();
-            // Try to find a US English male/female voice for that standard accent
             utter.voice = voices.find(v => v.lang.includes('en-US')) || voices[0];
-            utter.pitch = 1.1;
+            utter.pitch = 1.0;
             utter.rate = 1.0;
             synth.speak(utter);
         };
@@ -134,27 +160,21 @@
         const aiBrain = (input) => {
             const query = input.toLowerCase();
             
-            // 1. Navigation Logic
             for (let id in rooms) {
                 if(query.includes(id) || query.includes(rooms[id].toLowerCase())) {
                     document.getElementById('end-node').value = id;
                     startNav(id);
-                    speak(`Sure. I am now marking the path to ${rooms[id]}. Follow the blue marker on your screen.`);
+                    speak(`Navigation activated. I am directing you to ${rooms[id]}. Please follow the blue marker.`);
                     return;
                 }
             }
 
-            // 2. Knowledge Base (Questions/Answers)
-            if(query.includes("hello") || query.includes("who are you")) {
-                speak("Hello! I am your H.I.T. Smart Navigator. I can help you find offices and labs across the campus.");
-            } else if(query.includes("chairman")) {
-                speak("The Chairman's office is located in S-Block, room S 10 A. Would you like me to guide you there?");
-            } else if(query.includes("time") || query.includes("open")) {
-                speak("The campus labs are usually open from 8 AM to 5 PM, Monday to Friday.");
-            } else if(query.includes("commerce")) {
-                speak("The Electronic Commerce office is in S 10 B, right next to the Chairman's office.");
+            if(query.includes("hello") || query.includes("hi")) {
+                speak("Welcome back. I am ready to guide you around the HIT S and N blocks.");
+            } else if(query.includes("where am i")) {
+                speak("You are currently at the entrance of the ground floor. Choose a destination to begin.");
             } else {
-                speak("I'm sorry, I didn't catch that. You can ask me for a room code like S 10 or N 4.");
+                speak("I couldn't find that specific room. Please mention the room code like N 4 or S 10.");
             }
         };
 
@@ -174,7 +194,6 @@
             });
         };
 
-        // Listen Events
         document.getElementById('voice-trigger').onclick = () => {
             recognition.start();
             document.getElementById('ai-text').innerText = "Listening...";
