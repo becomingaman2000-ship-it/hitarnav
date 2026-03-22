@@ -13,7 +13,6 @@ margin:0;padding:0;width:100%;height:100%;
 overflow:hidden;background:transparent;
 }
 
-/* FIX CAMERA */
 #arjs-video{
 position:fixed;
 top:0;left:0;
@@ -23,14 +22,12 @@ object-fit:cover;
 z-index:-1;
 }
 
-/* REMOVE WHITE VR BLOCK BUT KEEP BUTTON */
 .a-enter-vr-button{
 background:rgba(0,0,0,0.6)!important;
 border-radius:12px!important;
 right:15px!important;
 }
 
-/* UI */
 .ui-layer{z-index:10;pointer-events:none}
 .interactive{pointer-events:auto}
 
@@ -63,14 +60,11 @@ Start Navigation
 <!-- AR SCENE -->
 <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: true">
 
-<!-- DESTINATION -->
 <a-sphere id="marker" radius="0.4" color="#22d3ee" visible="false"></a-sphere>
 <a-text id="label" align="center" color="#fff" visible="false"></a-text>
 
-<!-- DIRECTION ARROW -->
 <a-cone id="arrow" radius-bottom="0.2" height="0.6" color="#22d3ee" visible="false"></a-cone>
 
-<!-- PATH -->
 <a-entity id="path"></a-entity>
 
 <a-entity camera></a-entity>
@@ -93,7 +87,7 @@ projectId:"hit-navigator-56b2b"
 const db = getFirestore(app);
 
 // =====================
-// FULL MAP DATA
+// MAP DATA
 // =====================
 const mapData = {
 
@@ -127,139 +121,216 @@ const mapData = {
 };
 
 // =====================
+// WAYPOINT ROUTES
+// =====================
+const routes = {
+"s1-library":[
+{x:2.5,z:9.8},
+{x:2.5,z:50},
+{x:-2.5,z:81.2}
+],
+"s1-n1":[
+{x:2.5,z:9.8},
+{x:2.5,z:-40},
+{x:2.5,z:-93.8}
+]
+};
+
+// =====================
 // VOICE
 // =====================
 const synth = window.speechSynthesis;
 const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
 
-const speak = (text)=>{
-    const utter = new SpeechSynthesisUtterance(text);
-    synth.speak(utter);
-};
+function speak(text){
+synth.speak(new SpeechSynthesisUtterance(text));
+}
 
 // =====================
-// GPS + INDOOR SMOOTHING
+// GPS SMOOTHING
 // =====================
 const anchor = { lat:-17.8252, lng:31.0335 };
 
 let smoothX=0, smoothZ=0;
 
 navigator.geolocation.watchPosition(pos=>{
-    const scale=111139;
+const scale=111139;
 
-    const rawX=(pos.coords.longitude-anchor.lng)*scale;
-    const rawZ=-(pos.coords.latitude-anchor.lat)*scale;
+const rawX=(pos.coords.longitude-anchor.lng)*scale;
+const rawZ=-(pos.coords.latitude-anchor.lat)*scale;
 
-    smoothX += (rawX - smoothX)*0.1;
-    smoothZ += (rawZ - smoothZ)*0.1;
+smoothX+=(rawX-smoothX)*0.12;
+smoothZ+=(rawZ-smoothZ)*0.12;
+
+if(navigationActive){
+updateNavigation();
+}
+
 });
 
 // =====================
-// PATH
+// PATH DRAW
 // =====================
 function drawPath(x,z){
-    const pathEl=document.getElementById('path');
-    pathEl.innerHTML="";
+const path=document.getElementById("path");
+path.innerHTML="";
 
-    for(let i=1;i<=12;i++){
-        const r=i/12;
-        const dot=document.createElement('a-sphere');
-        dot.setAttribute('radius','0.1');
-        dot.setAttribute('color','#22d3ee');
-        dot.setAttribute('position',`${x*r} 0 ${z*r}`);
-        pathEl.appendChild(dot);
-    }
+for(let i=1;i<=12;i++){
+const r=i/12;
+const dot=document.createElement("a-sphere");
+dot.setAttribute("radius","0.1");
+dot.setAttribute("color","#22d3ee");
+dot.setAttribute("position",`${x*r} 0 ${z*r}`);
+path.appendChild(dot);
+}
 }
 
 // =====================
-// TURN INSTRUCTIONS
+// TURN LOGIC
 // =====================
 function getTurnInstruction(x,z){
-    const angle = Math.atan2(x, z) * (180/Math.PI);
+const angle=Math.atan2(x,z)*(180/Math.PI);
 
-    if(angle > 20) return "Turn right";
-    if(angle < -20) return "Turn left";
-    return "Go straight";
+if(angle>20) return "Turn right";
+if(angle<-20) return "Turn left";
+return "Go straight";
 }
 
 // =====================
-// NAVIGATION
+// NAV STATE
 // =====================
-async function startNav(id){
+let currentRoute=[];
+let currentIndex=0;
+let navigationActive=false;
+let destinationId=null;
 
-    const dest=mapData[id];
-    if(!dest) return;
+// =====================
+// START NAVIGATION
+// =====================
+function startNav(id){
 
-    const finalX=dest.x - smoothX;
-    const finalZ=dest.z - smoothZ;
+destinationId=id;
 
-    const marker=document.getElementById('marker');
-    const label=document.getElementById('label');
-    const arrow=document.getElementById('arrow');
+const key=Object.keys(routes).find(r=>r.endsWith(id));
 
-    // marker
-    marker.setAttribute('position',`${finalX} 0 ${finalZ}`);
-    marker.setAttribute('visible',true);
+if(key){
+currentRoute=routes[key];
+}else{
+currentRoute=[{...mapData["s1"]}, mapData[id]];
+}
 
-    // label
-    label.setAttribute('value',dest.name);
-    label.setAttribute('position',`${finalX} 1.5 ${finalZ}`);
-    label.setAttribute('visible',true);
+currentIndex=0;
+navigationActive=true;
 
-    // path
-    drawPath(finalX, finalZ);
+updateNavigation();
+}
 
-    // arrow direction
-    const angle = Math.atan2(finalX, finalZ) * (180/Math.PI);
-    arrow.setAttribute('rotation',`0 ${angle} 0`);
-    arrow.setAttribute('position','0 0 -1');
-    arrow.setAttribute('visible',true);
+// =====================
+// REAL-TIME NAVIGATION
+// =====================
+function updateNavigation(){
 
-    // distance
-    const dist=Math.sqrt(finalX**2+finalZ**2).toFixed(1);
+if(currentIndex >= currentRoute.length-1){
+speak("You have arrived");
+navigationActive=false;
+return;
+}
 
-    // 🔥 TURN LOGIC
-    const turn = getTurnInstruction(finalX, finalZ);
-    const instruction = `${turn} in ${dist} meters`;
+const start=currentRoute[currentIndex];
+const end=currentRoute[currentIndex+1];
 
-    speak(instruction);
+const dx=end.x - smoothX;
+const dz=end.z - smoothZ;
 
-    await addDoc(collection(db,"NavLogs"),{
-        destination:dest.name,
-        instruction:instruction,
-        timestamp:serverTimestamp()
-    });
+const marker=document.getElementById("marker");
+const label=document.getElementById("label");
+const arrow=document.getElementById("arrow");
+
+// marker
+marker.setAttribute("position",`${dx} 0 ${dz}`);
+marker.setAttribute("visible",true);
+
+// label
+label.setAttribute("value","Navigating");
+label.setAttribute("position",`${dx} 1.5 ${dz}`);
+label.setAttribute("visible",true);
+
+// arrow
+const angle=Math.atan2(dx,dz)*(180/Math.PI);
+arrow.setAttribute("rotation",`0 ${angle} 0`);
+arrow.setAttribute("position","0 0 -1");
+arrow.setAttribute("visible",true);
+
+// path
+drawPath(dx,dz);
+
+// distance to waypoint
+const dist=Math.sqrt(
+Math.pow(end.x - smoothX,2)+
+Math.pow(end.z - smoothZ,2)
+);
+
+// step distance
+const stepDist=Math.sqrt(
+Math.pow(end.x - start.x,2)+
+Math.pow(end.z - start.z,2)
+).toFixed(1);
+
+// turn instruction
+const turn=getTurnInstruction(end.x - start.x, end.z - start.z);
+
+// voice throttling
+if(dist < 6 && !window._spoken){
+speak(`${turn} and walk ${stepDist} meters`);
+window._spoken=true;
+}
+
+if(dist > 8){
+window._spoken=false;
+}
+
+// waypoint reached
+if(dist < 3){
+currentIndex++;
+window._spoken=false;
+updateNavigation();
+}
+
 }
 
 // =====================
 // UI
 // =====================
-const select=document.getElementById('end-node');
+const select=document.getElementById("end-node");
 
 for(let id in mapData){
-    const opt=document.createElement('option');
-    opt.value=id;
-    opt.textContent=mapData[id].name;
-    select.appendChild(opt);
+const opt=document.createElement("option");
+opt.value=id;
+opt.textContent=mapData[id].name;
+select.appendChild(opt);
 }
 
-document.getElementById('go-btn').onclick=()=>{
-    if(select.value) startNav(select.value);
+document.getElementById("go-btn").onclick=()=>{
+if(select.value) startNav(select.value);
 };
 
-// voice trigger
+// =====================
+// VOICE INPUT
+// =====================
 document.body.addEventListener("dblclick",()=>recognition.start());
 
 recognition.onresult=(e)=>{
-    const text=e.results[0][0].transcript.toLowerCase();
-    for(let id in mapData){
-        if(text.includes(id) || text.includes(mapData[id].name.toLowerCase())){
-            select.value=id;
-            startNav(id);
-            return;
-        }
-    }
-    speak("Location not found");
+const text=e.results[0][0].transcript.toLowerCase();
+
+for(let id in mapData){
+if(text.includes(id) || text.includes(mapData[id].name.toLowerCase())){
+select.value=id;
+startNav(id);
+return;
+}
+}
+
+speak("Location not found");
 };
 
 </script>
