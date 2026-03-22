@@ -108,8 +108,6 @@
                     localStorage.setItem('hit_current_part', 'PART_II'); 
                 }
 
-                // Everyone starts at the Dashboard for a secure entry
-                window.location.href = 'dashboard.html';
                 
             } catch (e) {
                 if (e.code === 'auth/too-many-requests') {
