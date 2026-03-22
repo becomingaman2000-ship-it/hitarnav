@@ -1,85 +1,135 @@
-<script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
-    import { getFirestore, doc, setDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HIT Navigator | Secure Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-900 min-h-screen flex items-center justify-center p-4">
 
-    const firebaseConfig = {
-        apiKey: "AIzaSyCcendyEqvaAw7ldnFOSwDEfQb74L_wfmw",
-        authDomain: "hit-navigator-56b2b.firebaseapp.com",
-        projectId: "hit-navigator-56b2b",
-        storageBucket: "hit-navigator-56b2b.firebasestorage.app",
-        messagingSenderId: "744294498866",
-        appId: "1:744294498866:web:94aea9f4db7a998256722b"
-    };
+    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl overflow-hidden border border-slate-700">
+        <div class="bg-gradient-to-r from-cyan-600 to-blue-700 p-8 text-white text-center">
+            <h1 class="text-3xl font-black italic tracking-tighter uppercase">HIT NAVIGATOR</h1>
+            <p class="text-xs opacity-80 tracking-widest mt-1">Enterprise Management System</p>
+        </div>
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
-    const db = getFirestore(app);
+        <div class="p-8">
+            <form id="auth-form">
+                <div class="mb-4">
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">User Email</label>
+                    <input type="email" id="email" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 bg-slate-50" placeholder="e.g. name@hit.ac.zw" required>
+                </div>
 
-    window.handleAuth = async (type) => {
-        const email = document.getElementById('email').value.trim().toLowerCase();
-        const password = document.getElementById('password').value;
-        const role = document.getElementById('role').value;
+                <div class="mb-4">
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">Account Type</label>
+                    <select id="role" class="w-full p-3 border rounded-xl outline-none bg-slate-50 text-slate-700 font-medium">
+                        <option value="student">Student Account</option>
+                        <option value="staff">Staff Member</option>
+                        <option value="guest">Guest Visitor</option>
+                        <option value="admin">System Admin (Chairman)</option>
+                    </select>
+                </div>
 
-        // Security Check for Chairman
-        if (role === 'admin') {
-            if (email !== "eustacemadawu1@gmail.com" || password !== "password") {
-                alert("⚠️ SECURITY: Unauthorized Admin access denied.");
-                return;
+                <div class="mb-6">
+                    <label class="block text-[10px] font-bold text-slate-400 mb-1 uppercase tracking-widest">Password</label>
+                    <input type="password" id="password" class="w-full p-3 border rounded-xl outline-none focus:ring-2 focus:ring-cyan-500 bg-slate-50" placeholder="••••••••" required>
+                </div>
+
+                <div class="flex gap-3">
+                    <button type="button" id="loginBtn" class="flex-1 bg-slate-100 text-slate-700 py-4 rounded-2xl font-bold hover:bg-slate-200 transition active:scale-95 text-sm uppercase">Login</button>
+                    <button type="button" id="signupBtn" class="flex-1 bg-cyan-600 text-white py-4 rounded-2xl font-bold shadow-lg hover:bg-cyan-700 transition active:scale-95 text-sm uppercase">Sign Up</button>
+                </div>
+            </form>
+            <p id="status-msg" class="text-center text-[10px] text-slate-400 mt-6 italic">Authorized access only for HIT Campus personnel.</p>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+        import { getFirestore, doc, setDoc, addDoc, collection, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCcendyEqvaAw7ldnFOSwDEfQb74L_wfmw",
+            authDomain: "hit-navigator-56b2b.firebaseapp.com",
+            projectId: "hit-navigator-56b2b",
+            storageBucket: "hit-navigator-56b2b.firebasestorage.app",
+            messagingSenderId: "744294498866",
+            appId: "1:744294498866:web:94aea9f4db7a998256722b"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        window.handleAuth = async (type) => {
+            const email = document.getElementById('email').value.trim().toLowerCase();
+            const password = document.getElementById('password').value;
+            const role = document.getElementById('role').value;
+
+            // Admin Security Check
+            if (role === 'admin') {
+                if (email !== "eustacemadawu1@gmail.com" || password !== "password") {
+                    alert("⚠️ SECURITY: Unauthorized Admin access denied.");
+                    return;
+                }
+                if (type === 'signup') {
+                    alert("Admin is pre-registered. Please Login.");
+                    return;
+                }
             }
-            if (type === 'signup') {
-                alert("Admin is pre-registered. Please Login.");
-                return;
-            }
-        }
 
-        try {
-            let userCredential;
-            
-            // 1. Authenticate with Firebase
-            if (type === 'signup') {
-                userCredential = await createUserWithEmailAndPassword(auth, email, password);
-                await setDoc(doc(db, role + "s", userCredential.user.uid), {
-                    email: email,
-                    role: role,
-                    registeredAt: serverTimestamp()
-                });
-            } else {
-                userCredential = await signInWithEmailAndPassword(auth, email, password);
-            }
-
-            // 2. Log the Login (With a safety catch so it doesn't block entry)
             try {
-                await addDoc(collection(db, "Logins"), {
-                    uid: userCredential.user.uid,
-                    email: email,
-                    role: role,
-                    timestamp: serverTimestamp()
-                });
-            } catch (logErr) {
-                console.warn("Logging failed, but logging you in anyway.");
+                let userCredential;
+                
+                // 1. Authentication
+                if (type === 'signup') {
+                    userCredential = await createUserWithEmailAndPassword(auth, email, password);
+                    await setDoc(doc(db, role + "s", userCredential.user.uid), {
+                        email: email,
+                        role: role,
+                        registeredAt: serverTimestamp()
+                    });
+                } else {
+                    userCredential = await signInWithEmailAndPassword(auth, email, password);
+                }
+
+                // 2. Logging with error protection
+                try {
+                    await addDoc(collection(db, "Logins"), {
+                        uid: userCredential.user.uid,
+                        email: email,
+                        role: role,
+                        timestamp: serverTimestamp()
+                    });
+                } catch (logErr) {
+                    console.warn("Log creation failed, but moving to dashboard.");
+                }
+
+                // 3. Prepare Session Data
+                localStorage.setItem('hit_user_role', role);
+                localStorage.setItem('hit_user_email', email);
+                
+                if (role === 'student') {
+                    // Set default part for the Hub/Map/VR
+                    localStorage.setItem('hit_current_part', 'PART_II'); 
+                }
+
+                // 4. Final Redirect to Dashboard
+                window.location.href = 'dashboard.html';
+
+            } catch (e) {
+                if (e.code === 'auth/too-many-requests') {
+                    alert("🛡️ LOCKED: Too many attempts. Wait 15 mins.");
+                } else {
+                    alert("Error: " + e.message);
+                }
             }
+        };
 
-            // 3. Set Session Data for the Hub/Map/VR
-            localStorage.setItem('hit_user_role', role);
-            localStorage.setItem('hit_user_email', email);
-            
-            if (role === 'student') {
-                localStorage.setItem('hit_current_part', 'PART_II'); 
-            }
-
-            // 4. Redirect to Dashboard
-            window.location.href = 'dashboard.html';
-
-        } catch (e) {
-            if (e.code === 'auth/too-many-requests') {
-                alert("🛡️ LOCKED: Too many attempts. Wait 15 mins.");
-            } else {
-                alert("Error: " + e.message);
-            }
-        }
-    };
-
-    document.getElementById('loginBtn').onclick = () => window.handleAuth('login');
-    document.getElementById('signupBtn').onclick = () => window.handleAuth('signup');
-</script>
+        document.getElementById('loginBtn').onclick = () => window.handleAuth('login');
+        document.getElementById('signupBtn').onclick = () => window.handleAuth('signup');
+    </script>
+</body>
+</html>
