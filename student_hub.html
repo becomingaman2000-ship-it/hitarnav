@@ -109,8 +109,9 @@
         
         function updateDashboard() {
             const selectedPart = document.getElementById('year-select').value;
+                        localStorage.setItem('hit_current_part', document.getElementById('year-select').value);
             const data = MASTER_DATA[selectedPart];
-            localStorage.setItem('hit_current_part', document.getElementById('year-select').value);
+
             // Update Header
             document.getElementById('part-display-header').innerText = `E-Commerce • ${selectedPart.replace('_', ' ')}`;
             document.getElementById('current-day').innerText = day;
