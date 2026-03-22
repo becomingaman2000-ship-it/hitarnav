@@ -11,14 +11,8 @@
         #arjs-video { position: fixed !important; top: 0; left: 0; width: 100% !important; height: 100% !important; object-fit: cover !important; z-index: -1 !important; }
         .ui-layer { z-index: 10; pointer-events: none; }
         .interactive { pointer-events: auto; }
-        
-        .ai-wave {
-            background: linear-gradient(90deg, #22d3ee, #0891b2, #22d3ee);
-            background-size: 200% 200%;
-            animation: wave 2s linear infinite;
-        }
+        .ai-wave { background: linear-gradient(90deg, #22d3ee, #0891b2, #22d3ee); background-size: 200% 200%; animation: wave 2s linear infinite; }
         @keyframes wave { 0% { background-position: 0% 50%; } 100% { background-position: 200% 50%; } }
-        
         .glowing-btn { box-shadow: 0 0 30px rgba(34, 211, 238, 0.5); }
         #map-overlay { transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1); transform: translateY(120%); }
         #map-overlay.active { transform: translateY(0); }
@@ -52,21 +46,23 @@
         <div class="space-y-4 interactive">
             <div class="bg-black/50 backdrop-blur-2xl p-2 rounded-[2.5rem] border border-white/10 shadow-2xl">
                 <div class="flex flex-col gap-1 p-2">
-                    <select id="start-node" class="bg-slate-900/90 text-white text-[10px] p-3 mb-1 rounded-2xl outline-none border border-white/5 font-bold">
-                        <option>Start: Current Location (Entrance)</option>
-                    </select>
-
                     <select id="end-node" class="bg-slate-800/80 text-white text-[11px] p-3 rounded-2xl outline-none border border-white/5 font-bold">
                         <option value="">Where are we going today?</option>
-                        <optgroup label="S-BLOCK">
-                            <option value="s10a">Chairman Office (S10A)</option>
-                            <option value="s10b">E-Commerce Office (S10B)</option>
-                            <option value="s2">S2 Computer Science Lab</option>
+                        <optgroup label="S-BLOCK (West Side)">
                             <option value="library">Library Reserve</option>
+                            <option value="s10b">E-Commerce Office</option>
+                            <option value="s10a">Chairman Office</option>
+                            <option value="s16">Director Tech Centre</option>
+                        </optgroup>
+                        <optgroup label="S-BLOCK (East Side)">
+                            <option value="s1">S1 Conference Room</option>
+                            <option value="s2">S2 CS Lab</option>
+                            <option value="s8">S8 IME 3</option>
                         </optgroup>
                         <optgroup label="N-BLOCK">
-                            <option value="n4">N4 CS Lab 1</option>
+                            <option value="n4">N4 CS 1</option>
                             <option value="n12">N12 Pneumatic Lab</option>
+                            <option value="n1">N1 Hydraulic Lab</option>
                         </optgroup>
                     </select>
                     <button id="go-btn" class="ai-wave text-white py-3 mt-1 rounded-2xl font-black text-[10px] uppercase tracking-widest shadow-lg">Activate AR Path</button>
@@ -79,7 +75,7 @@
                 </div>
                 <div class="mt-4 bg-black/60 backdrop-blur-lg border border-white/10 px-6 py-2 rounded-full text-center max-w-[280px]">
                     <p id="ai-text" class="text-cyan-400 text-[9px] font-black uppercase tracking-tighter">AI Assistant Standing By</p>
-                    <p id="ai-status" class="text-white/60 text-[8px] font-medium mt-1">"Take me to the Chairman's Office"</p>
+                    <p id="ai-status" class="text-white/60 text-[8px] font-medium mt-1">Try "Take me to the Library"</p>
                 </div>
             </div>
         </div>
@@ -98,7 +94,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
         import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-        // Your Config
         const firebaseConfig = {
             apiKey: "AIzaSyCcendyEqvaAw7ldnFOSwDEfQb74L_wfmw",
             authDomain: "hit-navigator-56b2b.firebaseapp.com",
@@ -111,15 +106,40 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // --- NAVIGATION MESH DATA (Coordinates in Meters relative to Entrance) ---
-        // X = Left(-) / Right(+), Z = Forward(-) / Backward(+)
+        // --- STEP-CALIBRATED MESH DATA ---
+        // 1 step = 0.7m. Z-axis: S-Block is +, N-Block is -. X-axis: East side is +, West side is -.
         const mapData = {
-            "s10a": { name: "Chairman Office", x: -8, z: -15 },
-            "s10b": { name: "Electronic Commerce Office", x: -8, z: -18 },
-            "s2":   { name: "S2 CS Lab", x: -12, z: -5 },
-            "n4":   { name: "N4 CS Lab", x: 10, z: -10 },
-            "n12":  { name: "N12 Pneumatic Lab", x: 15, z: -25 },
-            "library": { name: "Library Reserve", x: 0, z: -30 }
+            // S-BLOCK EAST SIDE (Right)
+            "s1": { name: "S1 Conference Room", x: 2.5, z: 9.8 },
+            "s2": { name: "S2 CS Lab", x: 2.5, z: 18.2 },
+            "s3": { name: "S3 SME Lab 1", x: 2.5, z: 26.6 },
+            "s4": { name: "S4 SME Lab 2", x: 2.5, z: 42.0 },
+            "s5": { name: "S5 FPT 4", x: 2.5, z: 50.4 },
+            "s6": { name: "S6 FE 4", x: 2.5, z: 58.8 },
+            "s7": { name: "S7 CS 4", x: 2.5, z: 74.2 },
+            "s8": { name: "S8 IME 3", x: 2.5, z: 81.2 },
+
+            // S-BLOCK WEST SIDE (Left - Mirrored)
+            "library": { name: "Library Reserve", x: -2.5, z: 81.2 },
+            "s10b": { name: "Electronic Commerce Office", x: -2.5, z: 74.2 },
+            "s10a": { name: "Chairman Office", x: -2.5, z: 70.0 }, // Estimated door position
+            "s13b": { name: "Chairman FE Office", x: -2.5, z: 58.8 },
+            "s14": { name: "TDC Office", x: -2.5, z: 50.4 },
+            "s15b": { name: "Chairman TDC", x: -2.5, z: 42.0 },
+            "s16": { name: "Director Tech Centre", x: -2.5, z: 9.8 },
+
+            // N-BLOCK WEST SIDE (Left)
+            "n6": { name: "N6 Proposed Pharmacy", x: -2.5, z: -38.5 }, // 33 + 22 steps from S-passage
+            "n7": { name: "N7 FPT Lab", x: -2.5, z: -46.2 },
+            "n8": { name: "N8 FPT Lab 2", x: -2.5, z: -62.3 },
+            "n9": { name: "N9 FE 1", x: -2.5, z: -70.0 },
+
+            // N-BLOCK EAST SIDE (Right - Mirrored)
+            "n10": { name: "N10 Proposed Analytic Lab", x: 2.5, z: -70.0 },
+            "n11": { name: "N11 Pharmaceutical Lab", x: 2.5, z: -62.3 },
+            "n12": { name: "N12 Pneumatic Lab", x: 2.5, z: -46.2 },
+            "n2": { name: "N2 Bio Tech Lab", x: 2.5, z: -86.1 },
+            "n1": { name: "N1 Hydraulic Lab", x: 2.5, z: -93.8 }
         };
 
         const synth = window.speechSynthesis;
@@ -138,47 +158,29 @@
             const marker = document.getElementById('nav-marker');
             const label = document.getElementById('marker-label');
 
-            // Move the AR marker to the mapped coordinate
             marker.setAttribute('position', `${dest.x} 0.5 ${dest.z}`);
             label.setAttribute('position', `${dest.x} 2.2 ${dest.z}`);
-            
             marker.setAttribute('visible', 'true');
             label.setAttribute('visible', 'true');
             label.setAttribute('value', dest.name.toUpperCase());
 
-            document.getElementById('ai-text').innerText = "Path Active";
-            document.getElementById('ai-status').innerText = `Target: ${dest.name}`;
-
-            // Calculate distance for voice feedback
             const dist = Math.sqrt(dest.x**2 + dest.z**2).toFixed(1);
-            speak(`I've marked the ${dest.name}. It is approximately ${dist} meters from here. Follow the glowing blue marker.`);
+            speak(`Navigating to ${dest.name}. It is about ${dist} meters away. Follow the blue indicator.`);
 
-            await addDoc(collection(db, "NavLogs"), {
-                destination: dest.name,
-                timestamp: serverTimestamp()
-            });
+            await addDoc(collection(db, "NavLogs"), { destination: dest.name, timestamp: serverTimestamp() });
         };
 
-        const aiBrain = (input) => {
-            const query = input.toLowerCase();
+        document.getElementById('voice-trigger').onclick = () => { recognition.start(); };
+        recognition.onresult = (e) => {
+            const transcript = e.results[0][0].transcript.toLowerCase();
             for (let id in mapData) {
-                if(query.includes(id) || query.includes(mapData[id].name.toLowerCase())) {
+                if(transcript.includes(id) || transcript.includes(mapData[id].name.toLowerCase())) {
                     document.getElementById('end-node').value = id;
                     startNav(id);
                     return;
                 }
             }
-            speak("I'm not sure where that is. Try asking for a room number like S 10.");
-        };
-
-        document.getElementById('voice-trigger').onclick = () => {
-            recognition.start();
-            document.getElementById('ai-text').innerText = "Listening...";
-        };
-
-        recognition.onresult = (e) => {
-            const transcript = e.results[0][0].transcript;
-            aiBrain(transcript);
+            speak("Room not recognized. Please try the room code.");
         };
 
         document.getElementById('go-btn').onclick = () => {
