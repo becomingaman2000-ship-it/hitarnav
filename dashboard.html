@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>HIT Dashboard | FIXED & Quick View</title>
+    <title>HIT NAV PRO | Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
@@ -26,43 +26,58 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
             
             <div class="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                <h3 class="font-black text-slate-800 text-xs uppercase mb-4 tracking-widest">📢 Campus Board</h3>
+                <h3 class="font-black text-slate-800 text-xs uppercase mb-4 tracking-widest text-cyan-500">Notice Board</h3>
                 <div id="notif-board" class="space-y-3">
                     <p class="text-slate-400 text-xs italic">Syncing with HIT Cloud...</p>
                 </div>
             </div>
 
             <div id="admin-broadcast" class="hidden bg-white p-6 rounded-3xl shadow-sm border-2 border-cyan-100 h-fit">
-                <h3 class="font-black text-slate-800 text-xs uppercase mb-4">Chairman Broadcast</h3>
-                <textarea id="notif-text" class="w-full p-4 bg-slate-50 border rounded-2xl text-sm mb-3 outline-none focus:ring-2 focus:ring-cyan-500" rows="3" placeholder="Type notification..."></textarea>
+                <h3 class="font-black text-slate-800 text-xs uppercase mb-4 italic">Broadcast to Campus</h3>
+                <textarea id="notif-text" class="w-full p-4 bg-slate-50 border rounded-2xl text-sm mb-3 outline-none focus:ring-2 focus:ring-cyan-500" rows="3" placeholder="What's the update, Chairman?"></textarea>
                 <button id="send-notif" class="w-full bg-slate-900 text-white py-3 rounded-xl font-bold text-xs uppercase hover:bg-black transition">Publish Message</button>
             </div>
 
-            <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 text-center">
-                <h3 class="font-black text-slate-800 text-xs uppercase mb-4 tracking-widest">Academic Schedule</h3>
-                <button onclick="document.getElementById('tt-modal').style.display='flex'" class="w-full bg-slate-100 text-slate-700 py-4 rounded-2xl font-black text-xs uppercase hover:bg-slate-200 transition">
-                    🖼️ View Full Timetable
-                </button>
+            <div id="admin-traffic" class="hidden lg:col-span-3 bg-white p-6 rounded-3xl shadow-sm border border-slate-200 overflow-hidden">
+                <h3 class="font-black text-slate-800 text-xs uppercase mb-4 tracking-widest flex items-center gap-2">
+                    <span class="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span> Live User Traffic
+                </h3>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left text-[11px]">
+                        <thead>
+                            <tr class="text-slate-400 border-b border-slate-100 uppercase tracking-tighter">
+                                <th class="pb-3 px-2">User ID</th>
+                                <th class="pb-3">Destination</th>
+                                <th class="pb-3">Time</th>
+                                <th class="pb-3 text-right">Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="traffic-body"></tbody>
+                    </table>
+                </div>
             </div>
 
-            <div id="student-setup" class="hidden bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
-                <h3 class="font-black text-slate-800 text-xs uppercase mb-4 tracking-widest">🔗 Student Sync</h3>
-                <input type="text" id="stud-id" class="w-full p-3 bg-slate-50 border rounded-xl text-sm mb-3" placeholder="Student ID (H23...)">
-                <select id="stud-part" class="w-full p-3 bg-slate-50 border rounded-xl text-sm mb-3 font-bold text-slate-700">
-                    <option value="1.2">Part 1.2</option>
-                    <option value="2.2">Part 2.2</option>
-                    <option value="4.2">Part 4.2</option>
-                </select>
-                <button id="save-profile" class="w-full bg-cyan-600 text-white py-3 rounded-xl font-bold text-xs uppercase shadow-md hover:bg-cyan-700">Link Timetable</button>
+            <div id="admin-analytics" class="hidden lg:col-span-3 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div class="bg-slate-900 p-6 rounded-3xl shadow-xl text-white">
+                    <h3 class="font-black text-cyan-400 text-xs uppercase mb-6 tracking-widest text-center">Popular Labs & Rooms</h3>
+                    <canvas id="trendingChart" height="150"></canvas>
+                </div>
+                <div class="bg-white p-6 rounded-3xl shadow-sm border border-slate-200 flex flex-col justify-center">
+                    <h3 class="font-black text-slate-800 text-xs uppercase mb-6 tracking-widest">Total System Reach</h3>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="p-4 bg-slate-50 rounded-2xl">
+                            <p class="text-slate-400 text-[9px] font-bold uppercase">Users Active</p>
+                            <p id="stat-users" class="text-2xl font-black text-slate-800">24</p>
+                        </div>
+                        <div class="p-4 bg-slate-50 rounded-2xl">
+                            <p class="text-slate-400 text-[9px] font-bold uppercase">Nav Requests</p>
+                            <p id="stat-navs" class="text-2xl font-black text-cyan-600">0</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </main>
-
-    <div id="tt-modal" style="display:none;" class="fixed inset-0 bg-black/80 z-[9999] p-6 flex-col items-center justify-center">
-        <button onclick="this.parentElement.style.display='none'" class="mb-4 bg-white text-black px-6 py-2 rounded-full font-black text-xs uppercase hover:scale-105 transition">CLOSE VIEW</button>
-        <img src="timetable.jpeg" class="max-w-full max-h-[80vh] rounded-lg shadow-2xl border-4 border-white">
-        <p class="text-white text-[10px] mt-4 opacity-50 uppercase tracking-widest">HIT Semester 2 Schedule</p>
-    </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
@@ -79,70 +94,70 @@
 
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
-
-        // 🛡️ ROLE DETECTION & Fallback
         const role = localStorage.getItem('hit_user_role');
         const email = localStorage.getItem('hit_user_email');
 
-        if (!role) {
-            alert("No session found. Redirecting to login.");
-            window.location.href = 'index.html';
-        }
+        document.getElementById('role-display').innerText = `Role: ${role || 'Guest'} | ${email || ''}`;
 
-        document.getElementById('role-display').innerText = `Role: ${role.toUpperCase()} | ${email}`;
-
-        // UNLOCK PANELS BASED ON ROLE
         if (role === 'admin') {
             document.getElementById('admin-broadcast').classList.remove('hidden');
-        } else if (role === 'student') {
-            document.getElementById('student-setup').classList.remove('hidden');
+            document.getElementById('admin-traffic').classList.remove('hidden');
+            document.getElementById('admin-analytics').classList.remove('hidden');
+            initAdminEngine();
         }
 
-        // --- 📢 LIVE BOARD LOGIC ---
+        // --- LIVE ANNOUNCEMENTS ---
         const qNotif = query(collection(db, "Notifications"), orderBy("timestamp", "desc"), limit(5));
         onSnapshot(qNotif, (snapshot) => {
             let html = "";
             snapshot.forEach(doc => {
                 const d = doc.data();
-                const time = d.timestamp ? d.timestamp.toDate().toLocaleTimeString() : "Just now";
-                html += `
-                <div class="bg-white p-4 rounded-2xl border-l-4 border-cyan-500 shadow-sm mb-3 hover:bg-slate-50 transition-colors">
-                    <p class="text-slate-800 text-sm font-medium mb-1">${d.message}</p>
-                    <div class="flex justify-between items-center mt-2">
-                        <span class="text-[8px] font-black text-cyan-600 uppercase">HIT OFFICIAL</span>
-                        <span class="text-[8px] text-slate-400 font-mono">${time}</span>
-                    </div>
-                </div>`;
+                html += `<div class="bg-white p-4 rounded-2xl border-l-4 border-cyan-500 shadow-sm mb-3">
+                            <p class="text-slate-800 text-sm font-medium">${d.message}</p>
+                         </div>`;
             });
-            document.getElementById('notif-board').innerHTML = html || "No campus notices today.";
+            document.getElementById('notif-board').innerHTML = html || "No campus notices.";
         });
 
-        // --- ✍️ ADMIN SENDING LOGIC ---
+        // --- ADMIN ENGINE (Traffic & Charts) ---
+        function initAdminEngine() {
+            const qTraffic = query(collection(db, "NavLogs"), orderBy("timestamp", "desc"), limit(10));
+            let chartInstance = null;
+
+            onSnapshot(qTraffic, (snapshot) => {
+                let html = "";
+                let roomCounts = {};
+                let total = 0;
+
+                snapshot.forEach(doc => {
+                    const d = doc.data();
+                    total++;
+                    roomCounts[d.destination] = (roomCounts[d.destination] || 0) + 1;
+                    const time = d.timestamp ? d.timestamp.toDate().toLocaleTimeString() : "...";
+                    html += `<tr class="border-b border-slate-50"><td class="py-3 px-2 font-bold">${d.userId}</td><td class="py-3 text-cyan-600">${d.destination}</td><td class="py-3 text-slate-400">${time}</td><td class="py-3 text-right"><span class="bg-green-100 text-green-600 px-2 py-0.5 rounded text-[8px] font-bold">LIVE</span></td></tr>`;
+                });
+
+                document.getElementById('traffic-body').innerHTML = html;
+                document.getElementById('stat-navs').innerText = total;
+                
+                // Update Chart
+                const ctx = document.getElementById('trendingChart').getContext('2d');
+                if(chartInstance) chartInstance.destroy();
+                chartInstance = new Chart(ctx, {
+                    type: 'bar',
+                    data: { labels: Object.keys(roomCounts), datasets: [{ data: Object.values(roomCounts), backgroundColor: '#22d3ee' }] },
+                    options: { plugins: { legend: { display: false } }, scales: { y: { beginAtZero: true, grid: { color: '#334155' } } } }
+                });
+            });
+        }
+
         if (role === 'admin') {
             document.getElementById('send-notif').onclick = async () => {
                 const msg = document.getElementById('notif-text').value;
-                if(!msg) return;
-                try {
-                    await addDoc(collection(db, "Notifications"), {
-                        message: msg,
-                        timestamp: serverTimestamp(),
-                        author: email
-                    });
+                if(msg) {
+                    await addDoc(collection(db, "Notifications"), { message: msg, timestamp: serverTimestamp() });
                     document.getElementById('notif-text').value = "";
-                } catch(e) { alert("Error: " + e.message); }
-            };
-        }
-
-        // --- 🔗 STUDENT SAVE LOGIC ---
-        if (role === 'student') {
-            document.getElementById('save-profile').onclick = () => {
-                const id = document.getElementById('stud-id').value;
-                const part = document.getElementById('stud-part').value;
-                if(!id) return alert("Please enter Student ID");
-                localStorage.setItem('hit_stud_id', id);
-                localStorage.setItem('hit_stud_part', part);
-                alert("✅ Profile Linked: " + part);
-                location.reload();
+                }
             };
         }
     </script>
