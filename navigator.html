@@ -56,7 +56,7 @@
                         <optgroup label="S-BLOCK" id="s-group"></optgroup>
                         <optgroup label="N-BLOCK" id="n-group"></optgroup>
                     </select>
-                    <button id="go-btn" class="ai-wave text-white py-3 mt-1 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg">Activate AR Path</button>
+                    <button id="go-btn" class="ai-wave text-white py-3 mt-1 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg">Activate Path</button>
                 </div>
             </div>
 
@@ -64,13 +64,19 @@
                 <div id="voice-trigger" class="w-16 h-16 bg-cyan-500 rounded-full flex items-center justify-center text-2xl shadow-2xl cursor-pointer active:scale-90 transition-transform">🎙️</div>
                 <div class="mt-4 bg-black/60 backdrop-blur-lg border border-white/10 px-6 py-2 rounded-full text-center max-w-[280px]">
                     <p id="ai-text" class="text-cyan-400 text-[9px] font-black uppercase tracking-tighter">AI Assistant Standing By</p>
-                    <p id="ai-status" class="text-white/60 text-[8px] font-medium mt-1">Select location or use voice</p>
+                    <p id="ai-status" class="text-white/60 text-[8px] font-medium mt-1">Ready for VR/AR Navigation</p>
                 </div>
             </div>
         </div>
     </div>
 
-    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
+    <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: true">
+        <a-assets>
+            <a-asset-item id="building-mesh" src="building.glb"></a-asset-item>
+        </a-assets>
+
+        <a-entity id="vr-building" gltf-model="#building-mesh" position="0 0 0" visible="false"></a-entity>
+
         <a-entity id="path-dots"></a-entity>
         
         <a-entity id="destination-marker" visible="false">
@@ -78,7 +84,11 @@
             <a-text id="marker-label" value="" align="center" position="0 3.2 0" scale="2.5 2.5 2.5" color="#ffffff"></a-text>
         </a-entity>
 
-        <a-entity camera></a-entity>
+        <a-entity id="rig" position="0 1.6 0">
+            <a-entity camera look-controls wasd-controls="acceleration: 20"></a-entity>
+        </a-entity>
+
+        <a-light type="ambient" color="#fff"></a-light>
     </a-scene>
 
     <script type="module">
@@ -97,7 +107,6 @@
         const app = initializeApp(firebaseConfig);
         const db = getFirestore(app);
 
-        // Grid Logic: 1 step ≈ 0.7m. S-Block (+Z), N-Block (-Z).
         const mapData = {
             "entrance": { name: "Entrance", x: 0, z: 0 },
             "s1": { name: "S1 Conference", x: 2.5, z: 9.8 },
@@ -105,15 +114,31 @@
             "s8": { name: "S8 IME 3", x: 2.5, z: 81.2 },
             "library": { name: "Library Reserve", x: -2.5, z: 81.2 },
             "s10a": { name: "Chairman Office", x: -2.5, z: 70.0 },
+            "s10b": { name: "E-Commerce Office", x: -2.5, z: 74.2 },
             "s16": { name: "Director Tech Centre", x: -2.5, z: 9.8 },
             "n1": { name: "N1 Hydraulic Lab", x: 2.5, z: -93.8 },
             "n12": { name: "N12 Pneumatic Lab", x: 2.5, z: -46.2 }
         };
 
+        // VR Session Visibility Logic
+        const sceneEl = document.querySelector('a-scene');
+        const vrBuilding = document.getElementById('vr-building');
+
+        sceneEl.addEventListener('enter-vr', () => {
+            vrBuilding.setAttribute('visible', 'true');
+            if(document.getElementById('arjs-video')) document.getElementById('arjs-video').style.display = 'none';
+        });
+
+        sceneEl.addEventListener('exit-vr', () => {
+            vrBuilding.setAttribute('visible', 'false');
+            if(document.getElementById('arjs-video')) document.getElementById('arjs-video').style.display = 'block';
+        });
+
         const populateList = () => {
             const sGroup = document.getElementById('s-group');
             const nGroup = document.getElementById('n-group');
             for (let id in mapData) {
+                if(id === "entrance") continue;
                 let opt = `<option value="${id}">${mapData[id].name}</option>`;
                 id.startsWith('n') ? nGroup.innerHTML += opt : sGroup.innerHTML += opt;
             }
@@ -136,29 +161,29 @@
             const zDiff = end.z - start.z;
             const steps = Math.abs(Math.round(zDiff / 0.7));
 
-            // 1. Draw Path Dots
+            // Breadcrumb Dots
             const dotContainer = document.getElementById('path-dots');
             dotContainer.innerHTML = '';
-            for(let i=1; i<=6; i++) {
-                const ratio = i / 7;
+            for(let i=1; i<=7; i++) {
+                const ratio = i / 8;
                 const dot = document.createElement('a-sphere');
-                dot.setAttribute('position', `${xDiff * ratio} 0.1 ${zDiff * ratio}`);
+                dot.setAttribute('position', `${start.x + (xDiff * ratio)} 0.1 ${start.z + (zDiff * ratio)}`);
                 dot.setAttribute('radius', '0.12');
                 dot.setAttribute('color', '#22d3ee');
                 dot.setAttribute('material', 'emissive: #22d3ee; opacity: 0.7');
                 dotContainer.appendChild(dot);
             }
 
-            // 2. Set Final Target
+            // Destination Marker
             const marker = document.getElementById('destination-marker');
-            marker.setAttribute('position', `${xDiff} 0 ${zDiff}`);
+            marker.setAttribute('position', `${end.x} 0 ${end.z}`);
             marker.setAttribute('visible', 'true');
             document.getElementById('marker-label').setAttribute('value', end.name.toUpperCase());
 
-            // 3. Voice Instructions
+            // Voice AI
             let moveDir = zDiff > 0 ? "forward" : "straight back";
-            let turnDir = end.x > 0 ? "right" : "left";
-            const voiceMsg = `Walk ${steps} steps ${moveDir}. Your destination is on the ${turnDir}.`;
+            let turnDir = end.x > start.x ? "right" : "left";
+            const voiceMsg = `Walk ${steps} steps ${moveDir}. Target is on the ${turnDir}.`;
             
             document.getElementById('ai-status').innerText = voiceMsg;
             speak(voiceMsg);
@@ -177,7 +202,7 @@
                     return;
                 }
             }
-            speak("Room not found. Please try again.");
+            speak("Destination not recognized.");
         };
 
         document.getElementById('go-btn').onclick = () => {
