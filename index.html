@@ -99,10 +99,18 @@
                     timestamp: serverTimestamp()
                 });
 
+                // Updated Logic: All roles go to Dashboard first
                 localStorage.setItem('hit_user_role', role);
                 localStorage.setItem('hit_user_email', email);
-                window.location.href = 'dashboard.html';
+                
+                if (role === 'student') {
+                    // Pre-set their part so the Hub is ready when they click into it later
+                    localStorage.setItem('hit_current_part', 'PART_II'); 
+                }
 
+                // Everyone starts at the Dashboard for a secure entry
+                window.location.href = 'dashboard.html';
+                
             } catch (e) {
                 if (e.code === 'auth/too-many-requests') {
                     alert("🛡️ LOCKED: Too many attempts. Wait 15 mins or change network.");
