@@ -24,7 +24,22 @@
         </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            
+            <div id="student-timetable" class="bg-slate-900 p-6 rounded-3xl shadow-xl text-white mb-6 border-b-4 border-cyan-500">
+    <div class="flex justify-between items-center mb-4">
+        <h3 class="font-black text-[10px] uppercase tracking-widest text-cyan-400">Next Scheduled Session</h3>
+        <span id="notif-time" class="text-[9px] text-slate-500 font-bold italic">--:--</span>
+    </div>
+    <div class="flex items-center gap-4">
+        <div class="bg-cyan-500/20 p-3 rounded-2xl">
+            <span class="text-2xl">📖</span>
+        </div>
+        <div>
+            <p id="next-course" class="text-lg font-black leading-tight">Loading Schedule...</p>
+            <p id="next-room" class="text-cyan-400 text-xs font-bold uppercase tracking-tighter">Please wait...</p>
+        </div>
+    </div>
+    <p class="text-[9px] text-slate-500 mt-4 uppercase font-bold">Expires in 24h • HIT E-Commerce Dept</p>
+</div>
             <div class="lg:col-span-2 bg-white p-6 rounded-3xl shadow-sm border border-slate-200">
                 <h3 class="font-black text-slate-800 text-[10px] uppercase mb-4 tracking-widest text-cyan-500 flex items-center gap-2">
                     <span class="w-2 h-2 bg-cyan-500 rounded-full animate-pulse"></span> Official Announcements
