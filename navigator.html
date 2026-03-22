@@ -2,153 +2,132 @@
 <html>
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>HIT AR | Full Blueprint Access</title>
+    <title>HIT AR | Master Navigator Pro</title>
     <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
     <script src="https://raw.githack.com/AR-js-org/AR.js/master/aframe/build/aframe-ar.js"></script>
     <script src="https://cdn.tailwindcss.com"></script>
     <style>
-        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: transparent; }
-        
-        /* Forces AR.js video to background and full size */
-        #arjs-video {
-            position: fixed !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            height: 100% !important;
-            object-fit: cover !important;
-            z-index: -1 !important; 
-        }
-
+        body, html { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent; }
+        #arjs-video { position: fixed !important; top: 0; left: 0; width: 100% !important; height: 100% !important; object-fit: cover !important; z-index: -1 !important; }
         .ui-layer { z-index: 10; pointer-events: none; }
         .interactive { pointer-events: auto; }
-        
-        .glowing-brain {
-            box-shadow: 0 0 25px #22d3ee;
-            animation: pulse 2s infinite;
-        }
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
-        
-        /* Dropdown styling for long lists */
-        select { border: 1px solid rgba(255,255,255,0.1); }
+        .glowing-btn { box-shadow: 0 0 20px #22d3ee; animation: pulse 2s infinite; }
+        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        #map-overlay { transition: transform 0.3s ease-in-out; transform: translateY(150%); }
+        #map-overlay.active { transform: translateY(0); }
     </style>
 </head>
 <body>
 
+    <div id="map-overlay" class="fixed inset-x-0 bottom-0 z-[100] p-4 interactive">
+        <div class="bg-black/90 backdrop-blur-xl border-t border-cyan-500/50 rounded-t-3xl p-4 shadow-2xl">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-cyan-400 font-black text-xs uppercase italic">HIT Ground Floor Blueprint</h3>
+                <button onclick="document.getElementById('map-overlay').classList.remove('active')" class="text-white text-xl">✕</button>
+            </div>
+            <img src="blueprint.jpeg" class="w-full rounded-xl border border-white/10" alt="Campus Map">
+        </div>
+    </div>
+
     <div class="ui-layer fixed inset-0 flex flex-col justify-between p-4">
-        
-        <div class="w-full flex flex-col gap-3 interactive">
-            <div class="flex justify-between items-center">
-                <button onclick="location.href='dashboard.html'" class="bg-black/80 text-white p-3 rounded-xl font-black text-[10px] border border-white/10 uppercase">✕ Exit</button>
-                <div class="bg-cyan-950/90 backdrop-blur-md px-4 py-2 rounded-full border border-cyan-400/30">
-                    <p id="ai-status" class="text-[9px] font-black uppercase text-cyan-400 tracking-widest">Master Nav Active</p>
-                </div>
+        <div class="w-full interactive space-y-2">
+            <div class="flex justify-between items-center mb-2">
+                <button onclick="location.href='dashboard.html'" class="bg-black/80 text-white p-3 rounded-xl font-black text-[10px] uppercase border border-white/10">✕ Exit</button>
+                <button id="toggle-map" onclick="document.getElementById('map-overlay').classList.add('active')" class="bg-cyan-600 text-white px-4 py-2 rounded-xl font-black text-[10px] uppercase shadow-lg">🗺 View 2D Map</button>
             </div>
 
-            <div class="bg-black/70 backdrop-blur-xl p-4 rounded-3xl border border-white/10 flex flex-col gap-2 shadow-2xl">
-                <div class="grid grid-cols-2 gap-2">
-                    <div>
-                        <label class="text-[8px] font-black text-cyan-400 uppercase ml-2">From</label>
-                        <select id="start-node" class="w-full bg-slate-900/95 text-white text-[10px] p-3 rounded-xl outline-none">
-                            <option value="">My Location...</option>
-                            <option value="entrance">Main Entrance</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="text-[8px] font-black text-cyan-400 uppercase ml-2">To Destination</label>
-                        <select id="end-node" class="w-full bg-slate-900/95 text-white text-[10px] p-3 rounded-xl outline-none">
-                            <option value="">Select Room...</option>
-                            <optgroup id="s-group" label="S-BLOCK (S1-S16)"></optgroup>
-                            <optgroup id="n-group" label="N-BLOCK (N1-N12)"></optgroup>
-                            <optgroup id="off-group" label="OFFICES & LABS"></optgroup>
-                        </select>
-                    </div>
+            <div class="bg-black/70 backdrop-blur-xl p-4 rounded-3xl border border-white/10 shadow-2xl">
+                <div class="grid grid-cols-2 gap-2 mb-2">
+                    <select id="start-node" class="bg-slate-900/90 text-white text-[10px] p-3 rounded-xl outline-none"><option>Start: Current Location</option></select>
+                    <select id="end-node" class="bg-slate-900/90 text-white text-[10px] p-3 rounded-xl outline-none">
+                        <option value="">Select Target Room...</option>
+                        <optgroup label="S-BLOCK">
+                            <option value="s1">S1 Conference</option><option value="s2">S2 CS Lab</option>
+                            <option value="s3">S3 SME Lab 1</option><option value="s4">S4 SME Lab 2</option>
+                            <option value="s5">S5 FPT 4</option><option value="s6">S6 FE 4</option>
+                            <option value="s7">S7 CS 4</option><option value="s8">S8 IME 3</option>
+                            <option value="s9">S9 Office</option><option value="s10a">Chairman Office</option>
+                            <option value="s10b">Electronic Commerce Office</option><option value="s11a">FE Office 1</option>
+                            <option value="s11b">FE Office 2</option><option value="s12a">FE Office 3</option>
+                            <option value="s12b">FE Office 4</option><option value="s13a">Secretary FE</option>
+                            <option value="s13b">Chairman FE Office</option><option value="s14">TDC Office</option>
+                            <option value="s15a">Secretary TDC</option><option value="s15b">Chairman TDC</option>
+                            <option value="s16">Director Tech Centre</option>
+                        </optgroup>
+                        <optgroup label="N-BLOCK">
+                            <option value="n1">N1 Hydraulic Lab</option><option value="n2">N2 Bio Tech Lab</option>
+                            <option value="n3">N3 CPSE Lab</option><option value="n4">N4 CS 1</option>
+                            <option value="n5">N5 IME 1</option><option value="n6">N6 Pharmacy Lab</option>
+                            <option value="n7">N7 FPT Lab</option><option value="n8">N8 FPT Lab 2</option>
+                            <option value="n9">N9 FE 1</option><option value="n10">N10 Analytic Lab</option>
+                            <option value="n11">N11 Pharmaceutical Lab</option><option value="n12">N12 Pneumatic Lab</option>
+                        </optgroup>
+                    </select>
                 </div>
-                <button id="go-btn" class="w-full bg-cyan-600 text-white py-2 rounded-xl font-black text-[10px] uppercase tracking-widest hover:bg-cyan-500 transition shadow-lg">Start AR Navigation</button>
+                <button id="go-btn" class="w-full bg-cyan-600 text-white py-2 rounded-xl font-black text-[10px] uppercase tracking-widest shadow-lg">Start AR Path</button>
             </div>
         </div>
 
-        <div class="flex flex-col items-center interactive mb-6">
-            <div id="voice-trigger" class="glowing-brain w-16 h-16 bg-cyan-500 rounded-full flex items-center justify-center text-2xl shadow-2xl">🎙️</div>
-            <p id="ai-text" class="text-white text-[10px] font-medium mt-3 italic drop-shadow-lg text-center bg-black/40 px-4 py-1 rounded-full">"Speak any Room Code (e.g. S15 or N4)"</p>
+        <div class="flex flex-col items-center interactive mb-8">
+            <div id="voice-trigger" class="glowing-btn w-16 h-16 bg-cyan-500 rounded-full flex items-center justify-center text-2xl shadow-2xl">🎙️</div>
+            <p id="ai-text" class="text-white text-[10px] font-medium mt-3 italic drop-shadow-lg text-center bg-black/40 px-4 py-1 rounded-full">"Say a code (e.g. S10 or N4)"</p>
         </div>
     </div>
 
     <a-scene embedded arjs="sourceType: webcam; debugUIEnabled: false;" vr-mode-ui="enabled: false">
-        <a-sphere id="nav-marker" radius="0.5" color="#22d3ee" visible="false" position="0 0 -6"
-                  animation="property: position; to: 0 0.5 -6; dir: alternate; dur: 1000; loop: true"></a-sphere>
+        <a-sphere id="nav-marker" radius="0.5" color="#22d3ee" visible="false" position="0 0 -6" animation="property: position; to: 0 0.5 -6; dir: alternate; dur: 1000; loop: true"></a-sphere>
         <a-text id="marker-label" value="" align="center" position="0 1.5 -6" scale="2.5 2.5 2.5" color="#00ffcc" visible="false"></a-text>
         <a-entity camera></a-entity>
     </a-scene>
 
-    <script>
-        // COMPREHENSIVE ROOM DATABASE FROM BLUEPRINT
-        const rooms = {
-            // S-BLOCK (S1 to S16)
-            "s1": "S1 Conference Room", "s2": "S2 CS Lab", "s3": "S3 SME Lab 1", "s4": "S4 SME Lab 2",
-            "s5": "S5 FPT 4", "s6": "S6 FE 4", "s7": "S7 CS 4", "s8": "S8 IME 3", 
-            "s10a": "Chairman Office", "s10b": "EC Office", "s11a": "FE Office", "s11b": "FE Office 2",
-            "s12a": "FE Office 3", "s12b": "FE Office 4", "s13a": "Secretary FE", "s13b": "Chairman FE",
-            "s14": "TDC Office", "s15a": "Secretary TDC", "s15b": "Chairman TDC", "s16": "Director Tech Centre",
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
-            // N-BLOCK (N1 to N12)
-            "n1": "N1 Hydraulic Lab", "n2": "N2 Bio Tech Lab", "n3": "N3 CPSE Lab", "n4": "N4 CS 1",
-            "n5": "N5 IME 1", "n6": "N6 Pharmacy Lab", "n7": "N7 FPT Lab", "n8": "N8 FPT Lab 2",
-            "n9": "N9 FE 1", "n10": "N10 Analytic Lab", "n11": "N11 Pharmaceutical Lab", "n12": "N12 Pneumatic Lab",
-
-            // SPECIALS
-            "lib": "Library Reserve", "toilets": "Main Toilets"
+        const firebaseConfig = {
+            apiKey: "AIzaSyCcendyEqvaAw7ldnFOSwDEfQb74L_wfmw",
+            authDomain: "hit-navigator-56b2b.firebaseapp.com",
+            projectId: "hit-navigator-56b2b",
+            storageBucket: "hit-navigator-56b2b.firebasestorage.app",
+            messagingSenderId: "744294498866",
+            appId: "1:744294498866:web:94aea9f4db7a998256722b"
         };
 
-        // DYNAMIC POPULATION
-        const sGroup = document.getElementById('s-group');
-        const nGroup = document.getElementById('n-group');
-        const offGroup = document.getElementById('off-group');
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
 
-        for (let id in rooms) {
-            let opt = document.createElement('option');
-            opt.value = id;
-            opt.innerHTML = rooms[id];
-            if(id.startsWith('s')) sGroup.appendChild(opt);
-            else if(id.startsWith('n')) nGroup.appendChild(opt);
-            else offGroup.appendChild(opt);
-        }
+        const rooms = {
+            "s1": "S1 Conference", "s2": "S2 CS Lab", "s3": "S3 SME Lab 1", "s4": "S4 SME Lab 2", "s5": "S5 FPT 4", "s6": "S6 FE 4", "s7": "S7 CS 4", "s8": "S8 IME 3", "s9": "S9 Office", "s10a": "Chairman Office", "s10b": "Electronic Commerce Office", "s11a": "FE Office 1", "s11b": "FE Office 2", "s12a": "FE Office 3", "s12b": "FE Office 4", "s13a": "Secretary FE", "s13b": "Chairman FE", "s14": "TDC Office", "s15a": "Secretary TDC", "s15b": "Chairman TDC", "s16": "Director Tech Centre",
+            "n1": "N1 Hydraulic Lab", "n2": "N2 Bio Tech Lab", "n3": "N3 CPSE Lab", "n4": "N4 CS 1", "n5": "N5 IME 1", "n6": "N6 Pharmacy Lab", "n7": "N7 FPT Lab", "n8": "N8 FPT Lab 2", "n9": "N9 FE 1", "n10": "N10 Analytic Lab", "n11": "N11 Pharmaceutical Lab", "n12": "N12 Pneumatic Lab"
+        };
 
-        const startNav = () => {
-            const destId = document.getElementById('end-node').value;
-            if(!destId) return;
-            const name = rooms[destId];
+        const startNav = async (id) => {
+            const name = rooms[id];
+            if(!name) return;
             document.getElementById('nav-marker').setAttribute('visible', 'true');
             document.getElementById('marker-label').setAttribute('visible', 'true');
             document.getElementById('marker-label').setAttribute('value', name.toUpperCase());
-            document.getElementById('ai-text').innerText = `Path found to ${name}. Follow the marker.`;
-        };
-
-        document.getElementById('go-btn').onclick = startNav;
-
-        // VOICE AI LOGIC
-        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
-        document.getElementById('voice-trigger').onclick = () => {
-            recognition.start();
-            document.getElementById('ai-status').innerText = "Listening...";
-        };
-
-        recognition.onresult = (event) => {
-            const input = event.results[0][0].transcript.toLowerCase();
-            document.getElementById('ai-status').innerText = "Processing...";
+            document.getElementById('ai-text').innerText = `Directing you to ${name}...`;
             
-            let found = false;
+            await addDoc(collection(db, "NavLogs"), {
+                userId: localStorage.getItem('hit_user_email') || "Guest",
+                destination: name,
+                timestamp: serverTimestamp()
+            });
+        };
+
+        document.getElementById('go-btn').onclick = () => startNav(document.getElementById('end-node').value);
+
+        const recognition = new (window.SpeechRecognition || window.webkitSpeechRecognition)();
+        document.getElementById('voice-trigger').onclick = () => recognition.start();
+        recognition.onresult = (e) => {
+            const input = e.results[0][0].transcript.toLowerCase();
             for (let id in rooms) {
                 if(input.includes(id) || input.includes(rooms[id].toLowerCase())) {
                     document.getElementById('end-node').value = id;
-                    startNav();
-                    found = true;
+                    startNav(id);
                     break;
                 }
-            }
-            if(!found) {
-                document.getElementById('ai-text').innerText = "Room not found. Try saying S 15 or N 10.";
-                document.getElementById('ai-status').innerText = "Ready";
             }
         };
     </script>
