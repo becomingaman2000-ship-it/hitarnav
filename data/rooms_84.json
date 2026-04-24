@@ -1,0 +1,862 @@
+[
+  {
+    "name": "PASSAGE",
+    "side": "center",
+    "bbox": [
+      440,
+      60,
+      560,
+      116
+    ]
+  },
+  {
+    "name": "S1",
+    "side": "left",
+    "bbox": [
+      100,
+      150,
+      420,
+      206
+    ]
+  },
+  {
+    "name": "CONFERENCE ROOM",
+    "side": "right",
+    "bbox": [
+      580,
+      240,
+      900,
+      296
+    ]
+  },
+  {
+    "name": "Office",
+    "side": "left",
+    "bbox": [
+      100,
+      330,
+      420,
+      386
+    ]
+  },
+  {
+    "name": "S2",
+    "side": "right",
+    "bbox": [
+      580,
+      420,
+      900,
+      476
+    ]
+  },
+  {
+    "name": "COMPUTER SCIENCE LAB",
+    "side": "left",
+    "bbox": [
+      100,
+      510,
+      420,
+      566
+    ]
+  },
+  {
+    "name": "S3",
+    "side": "right",
+    "bbox": [
+      580,
+      600,
+      900,
+      656
+    ]
+  },
+  {
+    "name": "SME LAB 1",
+    "side": "left",
+    "bbox": [
+      100,
+      690,
+      420,
+      746
+    ]
+  },
+  {
+    "name": "S4",
+    "side": "right",
+    "bbox": [
+      580,
+      780,
+      900,
+      836
+    ]
+  },
+  {
+    "name": "SME LAB 2",
+    "side": "left",
+    "bbox": [
+      100,
+      870,
+      420,
+      926
+    ]
+  },
+  {
+    "name": "Office",
+    "side": "right",
+    "bbox": [
+      580,
+      960,
+      900,
+      1016
+    ]
+  },
+  {
+    "name": "S5",
+    "side": "left",
+    "bbox": [
+      100,
+      1050,
+      420,
+      1106
+    ]
+  },
+  {
+    "name": "FPT 4",
+    "side": "right",
+    "bbox": [
+      580,
+      1140,
+      900,
+      1196
+    ]
+  },
+  {
+    "name": "S6",
+    "side": "left",
+    "bbox": [
+      100,
+      1230,
+      420,
+      1286
+    ]
+  },
+  {
+    "name": "FE 4",
+    "side": "right",
+    "bbox": [
+      580,
+      1320,
+      900,
+      1376
+    ]
+  },
+  {
+    "name": "S7",
+    "side": "left",
+    "bbox": [
+      100,
+      1410,
+      420,
+      1466
+    ]
+  },
+  {
+    "name": "CS 4",
+    "side": "right",
+    "bbox": [
+      580,
+      1500,
+      900,
+      1556
+    ]
+  },
+  {
+    "name": "Office",
+    "side": "left",
+    "bbox": [
+      100,
+      1590,
+      420,
+      1646
+    ]
+  },
+  {
+    "name": "S8",
+    "side": "right",
+    "bbox": [
+      580,
+      1680,
+      900,
+      1736
+    ]
+  },
+  {
+    "name": "IME 3",
+    "side": "left",
+    "bbox": [
+      100,
+      1770,
+      420,
+      1826
+    ]
+  },
+  {
+    "name": "LIBRARY RESERVE",
+    "side": "right",
+    "bbox": [
+      580,
+      1860,
+      900,
+      1916
+    ]
+  },
+  {
+    "name": "Storeroom",
+    "side": "left",
+    "bbox": [
+      100,
+      1950,
+      420,
+      2006
+    ]
+  },
+  {
+    "name": "S109",
+    "side": "right",
+    "bbox": [
+      580,
+      2040,
+      900,
+      2096
+    ]
+  },
+  {
+    "name": "DTE Office",
+    "side": "left",
+    "bbox": [
+      100,
+      2130,
+      420,
+      2186
+    ]
+  },
+  {
+    "name": "Storeroom",
+    "side": "right",
+    "bbox": [
+      580,
+      2220,
+      900,
+      2276
+    ]
+  },
+  {
+    "name": "S110",
+    "side": "left",
+    "bbox": [
+      100,
+      2310,
+      420,
+      2366
+    ]
+  },
+  {
+    "name": "Pharma Office",
+    "side": "right",
+    "bbox": [
+      580,
+      2400,
+      900,
+      2456
+    ]
+  },
+  {
+    "name": "S111",
+    "side": "left",
+    "bbox": [
+      100,
+      2490,
+      420,
+      2546
+    ]
+  },
+  {
+    "name": "FE Office",
+    "side": "right",
+    "bbox": [
+      580,
+      2580,
+      900,
+      2636
+    ]
+  },
+  {
+    "name": "S123",
+    "side": "left",
+    "bbox": [
+      100,
+      2670,
+      420,
+      2726
+    ]
+  },
+  {
+    "name": "FE Office",
+    "side": "right",
+    "bbox": [
+      580,
+      2760,
+      900,
+      2816
+    ]
+  },
+  {
+    "name": "S124",
+    "side": "left",
+    "bbox": [
+      100,
+      2850,
+      420,
+      2906
+    ]
+  },
+  {
+    "name": "FE Office",
+    "side": "right",
+    "bbox": [
+      580,
+      2940,
+      900,
+      2996
+    ]
+  },
+  {
+    "name": "S124",
+    "side": "left",
+    "bbox": [
+      100,
+      3030,
+      420,
+      3086
+    ]
+  },
+  {
+    "name": "FE Office",
+    "side": "right",
+    "bbox": [
+      580,
+      3120,
+      900,
+      3176
+    ]
+  },
+  {
+    "name": "Storeroom",
+    "side": "left",
+    "bbox": [
+      100,
+      3210,
+      420,
+      3266
+    ]
+  },
+  {
+    "name": "S125",
+    "side": "right",
+    "bbox": [
+      580,
+      3300,
+      900,
+      3356
+    ]
+  },
+  {
+    "name": "Registry",
+    "side": "left",
+    "bbox": [
+      100,
+      3390,
+      420,
+      3446
+    ]
+  },
+  {
+    "name": "Computer Office",
+    "side": "right",
+    "bbox": [
+      580,
+      3480,
+      900,
+      3536
+    ]
+  },
+  {
+    "name": "S126",
+    "side": "left",
+    "bbox": [
+      100,
+      3570,
+      420,
+      3626
+    ]
+  },
+  {
+    "name": "DCE Office",
+    "side": "right",
+    "bbox": [
+      580,
+      3660,
+      900,
+      3716
+    ]
+  },
+  {
+    "name": "S134",
+    "side": "left",
+    "bbox": [
+      100,
+      3750,
+      420,
+      3806
+    ]
+  },
+  {
+    "name": "Chairman",
+    "side": "right",
+    "bbox": [
+      580,
+      3840,
+      900,
+      3896
+    ]
+  },
+  {
+    "name": "S135",
+    "side": "left",
+    "bbox": [
+      100,
+      3930,
+      420,
+      3986
+    ]
+  },
+  {
+    "name": "TDC",
+    "side": "right",
+    "bbox": [
+      580,
+      4020,
+      900,
+      4076
+    ]
+  },
+  {
+    "name": "S154",
+    "side": "left",
+    "bbox": [
+      100,
+      4110,
+      420,
+      4166
+    ]
+  },
+  {
+    "name": "Secretary",
+    "side": "right",
+    "bbox": [
+      580,
+      4200,
+      900,
+      4256
+    ]
+  },
+  {
+    "name": "Storeroom",
+    "side": "left",
+    "bbox": [
+      100,
+      4290,
+      420,
+      4346
+    ]
+  },
+  {
+    "name": "S164",
+    "side": "right",
+    "bbox": [
+      580,
+      4380,
+      900,
+      4436
+    ]
+  },
+  {
+    "name": "Secretary",
+    "side": "left",
+    "bbox": [
+      100,
+      4470,
+      420,
+      4526
+    ]
+  },
+  {
+    "name": "S110B",
+    "side": "right",
+    "bbox": [
+      580,
+      4560,
+      900,
+      4616
+    ]
+  },
+  {
+    "name": "DIRECTOR TECHNOLOGY CENTRE",
+    "side": "left",
+    "bbox": [
+      100,
+      4650,
+      420,
+      4706
+    ]
+  },
+  {
+    "name": "TOILETS",
+    "side": "right",
+    "bbox": [
+      580,
+      4740,
+      900,
+      4796
+    ]
+  },
+  {
+    "name": "Toilet",
+    "side": "left",
+    "bbox": [
+      100,
+      4830,
+      420,
+      4886
+    ]
+  },
+  {
+    "name": "Toilet",
+    "side": "right",
+    "bbox": [
+      580,
+      4920,
+      900,
+      4976
+    ]
+  },
+  {
+    "name": "Storeroom",
+    "side": "left",
+    "bbox": [
+      100,
+      5010,
+      420,
+      5066
+    ]
+  },
+  {
+    "name": "Storeroom",
+    "side": "right",
+    "bbox": [
+      580,
+      5100,
+      900,
+      5156
+    ]
+  },
+  {
+    "name": "PASSAGE",
+    "side": "center",
+    "bbox": [
+      440,
+      5190,
+      560,
+      5246
+    ]
+  },
+  {
+    "name": "N5",
+    "side": "left",
+    "bbox": [
+      100,
+      5280,
+      420,
+      5336
+    ]
+  },
+  {
+    "name": "IME 1",
+    "side": "right",
+    "bbox": [
+      580,
+      5370,
+      900,
+      5426
+    ]
+  },
+  {
+    "name": "N4",
+    "side": "left",
+    "bbox": [
+      100,
+      5460,
+      420,
+      5516
+    ]
+  },
+  {
+    "name": "CS 1",
+    "side": "right",
+    "bbox": [
+      580,
+      5550,
+      900,
+      5606
+    ]
+  },
+  {
+    "name": "N3",
+    "side": "left",
+    "bbox": [
+      100,
+      5640,
+      420,
+      5696
+    ]
+  },
+  {
+    "name": "CPSE LAB",
+    "side": "right",
+    "bbox": [
+      580,
+      5730,
+      900,
+      5786
+    ]
+  },
+  {
+    "name": "N2",
+    "side": "left",
+    "bbox": [
+      100,
+      5820,
+      420,
+      5876
+    ]
+  },
+  {
+    "name": "BIO TECH LAB",
+    "side": "right",
+    "bbox": [
+      580,
+      5910,
+      900,
+      5966
+    ]
+  },
+  {
+    "name": "N1",
+    "side": "left",
+    "bbox": [
+      100,
+      6000,
+      420,
+      6056
+    ]
+  },
+  {
+    "name": "HYDRAULIC LAB FPT Parts 3 + 4",
+    "side": "right",
+    "bbox": [
+      580,
+      6090,
+      900,
+      6146
+    ]
+  },
+  {
+    "name": "Storeroom",
+    "side": "left",
+    "bbox": [
+      100,
+      6180,
+      420,
+      6236
+    ]
+  },
+  {
+    "name": "N6",
+    "side": "right",
+    "bbox": [
+      580,
+      6270,
+      900,
+      6326
+    ]
+  },
+  {
+    "name": "FPT 1 Proposed Pharmacy lab",
+    "side": "left",
+    "bbox": [
+      100,
+      6360,
+      420,
+      6416
+    ]
+  },
+  {
+    "name": "N7",
+    "side": "right",
+    "bbox": [
+      580,
+      6450,
+      900,
+      6506
+    ]
+  },
+  {
+    "name": "FPT LAB",
+    "side": "left",
+    "bbox": [
+      100,
+      6540,
+      420,
+      6596
+    ]
+  },
+  {
+    "name": "N8",
+    "side": "right",
+    "bbox": [
+      580,
+      6630,
+      900,
+      6686
+    ]
+  },
+  {
+    "name": "FPT LAB",
+    "side": "left",
+    "bbox": [
+      100,
+      6720,
+      420,
+      6776
+    ]
+  },
+  {
+    "name": "N9",
+    "side": "right",
+    "bbox": [
+      580,
+      6810,
+      900,
+      6866
+    ]
+  },
+  {
+    "name": "FE 1",
+    "side": "left",
+    "bbox": [
+      100,
+      6900,
+      420,
+      6956
+    ]
+  },
+  {
+    "name": "N10",
+    "side": "right",
+    "bbox": [
+      580,
+      6990,
+      900,
+      7046
+    ]
+  },
+  {
+    "name": "EE1 Proposed Analytic lab",
+    "side": "left",
+    "bbox": [
+      100,
+      7080,
+      420,
+      7136
+    ]
+  },
+  {
+    "name": "N11",
+    "side": "right",
+    "bbox": [
+      580,
+      7170,
+      900,
+      7226
+    ]
+  },
+  {
+    "name": "PHARMACEUTICAL LAB",
+    "side": "left",
+    "bbox": [
+      100,
+      7260,
+      420,
+      7316
+    ]
+  },
+  {
+    "name": "Storeroom",
+    "side": "right",
+    "bbox": [
+      580,
+      7350,
+      900,
+      7406
+    ]
+  },
+  {
+    "name": "N12",
+    "side": "left",
+    "bbox": [
+      100,
+      7440,
+      420,
+      7496
+    ]
+  },
+  {
+    "name": "PNEUMATIC LAB",
+    "side": "right",
+    "bbox": [
+      580,
+      7530,
+      900,
+      7586
+    ]
+  },
+  {
+    "name": "Start navigation",
+    "side": "left",
+    "bbox": [
+      100,
+      7620,
+      420,
+      7676
+    ]
+  },
+  {
+    "name": "\\u2190 Back i want to make it a diagram like",
+    "side": "right",
+    "bbox": [
+      580,
+      7710,
+      900,
+      7766
+    ]
+  }
+]

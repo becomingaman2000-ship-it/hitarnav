@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VR Office Navigation (Solid Walls + Fixed Movement)</title>
+
+  <script src="https://aframe.io/releases/1.4.0/aframe.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/cannon@0.6.2/build/cannon.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/aframe-physics-system@4.0.1/dist/aframe-physics-system.min.js"></script>
+</head>
+
+<body>
+
+<a-scene physics="gravity: -9.8">
+
+  <!-- LIGHT -->
+  <a-light type="ambient" intensity="0.6"></a-light>
+  <a-light type="directional" position="2 4 2"></a-light>
+
+  <!-- FLOOR -->
+  <a-plane rotation="-90 0 0" width="30" height="30" color="#111" static-body></a-plane>
+
+  <!-- CORRIDOR WALLS -->
+  <a-box position="0 2 -7" width="0.5" height="4" depth="4" color="red" static-body></a-box>
+  <a-box position="0 2 -1" width="0.5" height="4" depth="4" color="red" static-body></a-box>
+  <a-box position="0 2 5" width="0.5" height="4" depth="4" color="red" static-body></a-box>
+
+  <a-box position="5 2 -7" width="0.5" height="4" depth="4" color="red" static-body></a-box>
+  <a-box position="5 2 -1" width="0.5" height="4" depth="4" color="red" static-body></a-box>
+  <a-box position="5 2 5" width="0.5" height="4" depth="4" color="red" static-body></a-box>
+
+  <!-- FULL ROOM BOXES (FIXED) -->
+  <!-- Left rooms -->
+  <a-box position="-2.5 1 7" width="5" height="2" depth="5" color="#444" static-body></a-box>
+  <a-box position="-2.5 1 -1" width="5" height="2" depth="5" color="#444" static-body></a-box>
+  <a-box position="-2.5 1 -9" width="5" height="2" depth="5" color="#444" static-body></a-box>
+
+  <!-- Right rooms -->
+  <a-box position="7.5 1 7" width="5" height="2" depth="5" color="#444" static-body></a-box>
+  <a-box position="7.5 1 -1" width="5" height="2" depth="5" color="#444" static-body></a-box>
+  <a-box position="7.5 1 -9" width="5" height="2" depth="5" color="#444" static-body></a-box>
+
+  <!-- OUTSIDE WALLS -->
+  <a-box position="10 2 -1" width="0.5" height="4" depth="16" color="red" static-body></a-box>
+  <a-box position="-5 2 -1" width="0.5" height="4" depth="16" color="red" static-body></a-box>
+
+  <!-- PATH -->
+  <a-entity id="pathLine"></a-entity>
+
+  <!-- BUTTONS -->
+  <a-box position="-4 2 12" width="2" height="0.5" depth="0.5" color="green"
+         onclick="goToRoom('room1')"></a-box>
+  <a-text value="Room 1" position="-4 2.7 12"></a-text>
+
+  <a-box position="-1 2 12" width="2" height="0.5" depth="0.5" color="green"
+         onclick="goToRoom('room2')"></a-box>
+  <a-text value="Room 2" position="-1 2.7 12"></a-text>
+
+  <a-box position="2 2 12" width="2" height="0.5" depth="0.5" color="green"
+         onclick="goToRoom('room3')"></a-box>
+  <a-text value="Room 3" position="2 2.7 12"></a-text>
+
+  <a-box position="5 2 12" width="2" height="0.5" depth="0.5" color="green"
+         onclick="goToRoom('room4')"></a-box>
+  <a-text value="Room 4" position="5 2.7 12"></a-text>
+
+  <!-- PLAYER (FIXED MOVEMENT) -->
+  <a-entity id="player"
+    position="1 1.6 15"
+    dynamic-body="shape: cylinder; mass: 2; linearDamping: 0.95"
+    constraint="angularLock: x y z">
+
+    <a-camera look-controls></a-camera>
+  </a-entity>
+
+</a-scene>
+
+<script>
+
+/* PATHS */
+const paths = {
+  room1: [{x:1,y:1.6,z:5},{x:-3,y:1.6,z:5},{x:-3,y:1.6,z:-8}],
+  room2: [{x:1,y:1.6,z:5},{x:-3,y:1.6,z:5},{x:-3,y:1.6,z:2}],
+  room3: [{x:1,y:1.6,z:5},{x:8,y:1.6,z:5},{x:8,y:1.6,z:-8}],
+  room4: [{x:1,y:1.6,z:5},{x:8,y:1.6,z:5},{x:8,y:1.6,z:2}]
+};
+
+/* DRAW PATH */
+function drawPath(points){
+  const c = document.getElementById('pathLine');
+  c.innerHTML="";
+  for(let i=0;i<points.length-1;i++){
+    let seg=document.createElement('a-entity');
+    seg.setAttribute('line',
+    `start:${points[i].x} ${points[i].y} ${points[i].z};
+     end:${points[i+1].x} ${points[i+1].y} ${points[i+1].z};
+     color:cyan`);
+    c.appendChild(seg);
+  }
+}
+
+/* NAV */
+function goToRoom(id){
+  const p=document.querySelector('#player').getAttribute('position');
+  drawPath([{x:p.x,y:p.y,z:p.z},...paths[id]]);
+}
+
+/* MOVEMENT (FIXED) */
+const keys={};
+const speed=6;
+
+window.addEventListener('keydown',e=>keys[e.key.toLowerCase()]=true);
+window.addEventListener('keyup',e=>keys[e.key.toLowerCase()]=false);
+
+function move(){
+  const player=document.querySelector('#player');
+  if(!player.body)return;
+
+  const cam=player.querySelector('a-camera');
+  const rot=cam.getAttribute('rotation');
+  const yaw=rot.y*Math.PI/180;
+
+  let forceX=0,forceZ=0;
+
+  if(keys['w']){
+    forceX+=Math.sin(yaw)*speed;
+    forceZ+=Math.cos(yaw)*speed;
+  }
+  if(keys['s']){
+    forceX-=Math.sin(yaw)*speed;
+    forceZ-=Math.cos(yaw)*speed;
+  }
+  if(keys['a']){
+    forceX+=Math.sin(yaw-Math.PI/2)*speed;
+    forceZ+=Math.cos(yaw-Math.PI/2)*speed;
+  }
+  if(keys['d']){
+    forceX+=Math.sin(yaw+Math.PI/2)*speed;
+    forceZ+=Math.cos(yaw+Math.PI/2)*speed;
+  }
+
+  player.body.velocity.x = forceX;
+  player.body.velocity.z = forceZ;
+
+  requestAnimationFrame(move);
+}
+move();
+
+</script>
+
+</body>
+</html>
