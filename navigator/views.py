@@ -21,7 +21,6 @@ def room_map(request):
         'downstairs_rooms': downstairs_rooms
     })
 
-
 @csrf_exempt
 def upload_rooms(request):
     if request.method != 'POST':

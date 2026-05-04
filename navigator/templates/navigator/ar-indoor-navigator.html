@@ -34,10 +34,12 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   transition:opacity .15s;
 }
 .hamburger-btn:active{opacity:.7}
+
 @media (max-width:720px){
   .hamburger-btn{display:block}
   .map-canvas-wrap{max-height:600px;flex:0 0 auto}
 }
+
 .logo{font-family:var(--mono);font-size:9px;letter-spacing:.22em;color:var(--muted)}
 .logo em{color:var(--green);font-style:normal}
 .top-right{text-align:right}
@@ -50,6 +52,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   background:var(--surface);border-bottom:1px solid var(--border);
   flex-shrink:0;align-items:stretch;
 }
+
 .sel-row{display:none !important}
 .sel-box{
   flex:1;background:var(--surface2);border:1px solid var(--border2);
@@ -75,6 +78,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   transition:all .15s;flex-shrink:0;align-self:stretch;
   display:flex;align-items:center;gap:6px;
 }
+
 .nav-go-btn:active{opacity:.85;transform:scale(.97)}
 .nav-go-btn:disabled{background:var(--surface3);color:var(--muted);cursor:not-allowed;transform:none}
 .nav-go-btn svg{flex-shrink:0}
@@ -85,6 +89,7 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   padding:5px 16px;flex-shrink:0;
   background:var(--bg);
 }
+
 .mode-hint em{font-style:normal;color:var(--green)}
 
 /* CANVAS WRAP */
@@ -179,12 +184,14 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   background:var(--surface);border-top:1px solid var(--border);
   display:flex;flex-direction:row;gap:10px;flex-shrink:0;
 }
+
 .map-bottom button{
   flex:1;padding:12px;border-radius:10px;
   border:1px solid var(--border2);background:transparent;
   color:var(--text);font-family:var(--body);font-size:13px;font-weight:600;
   cursor:pointer;letter-spacing:.04em;transition:all .15s;
 }
+
 .map-bottom button:active{background:var(--surface3);transform:scale(.97)}
 .btn-ar{background:var(--green)!important;border-color:var(--green)!important;color:#000!important}
 .btn-ar:active{opacity:.85!important}
@@ -221,11 +228,13 @@ html,body{width:100%;height:100%;background:var(--bg);color:var(--text);font-fam
   flex-direction:column;
   gap:8px;
 }
+
 .cf-grid{
   position:absolute;inset:0;
   background:none;
   background-size:34px 34px;
 }
+
 .cf-text{position:relative;z-index:2;text-align:center}
 .cf-text p{font-size:10px;color:rgba(255,255,255,.18);font-family:var(--mono);letter-spacing:.1em}
 
